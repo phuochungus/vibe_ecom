@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Golf Store Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <h1>Golf Store</h1>
+        <p class="sidebar-caption">Trang quản trị hệ thống</p>
+        <nav>
+          <button class="nav-btn active" data-section="dashboard">Tổng quan</button>
+          <button class="nav-btn" data-section="products">Sản phẩm</button>
+          <button class="nav-btn" data-section="orders">Đơn hàng</button>
+          <button class="nav-btn" data-section="customers">Khách hàng</button>
+          <button class="nav-btn" data-section="admins">User Admin</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <header>
+          <div>
+            <h2 id="section-title">Tổng quan</h2>
+            <p class="welcome">Xin chào, <strong>admin@golfstore.vn</strong></p>
+          </div>
+          <input id="search" type="search" placeholder="Tìm sản phẩm, đơn hàng, khách hàng..." />
+        </header>
+
+        <section id="dashboard" class="panel active">
+          <div class="stats">
+            <article>
+              <h3>Doanh thu tháng</h3>
+              <p id="monthly-revenue">0 ₫</p>
+            </article>
+            <article>
+              <h3>Đơn hàng mới</h3>
+              <p id="new-orders">0</p>
+            </article>
+            <article>
+              <h3>Admin đang hoạt động</h3>
+              <p id="active-admins">0</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="products" class="panel">
+          <div class="panel-header">
+            <h3>Quản lý sản phẩm</h3>
+            <form id="product-form">
+              <input id="product-name" required placeholder="Tên sản phẩm" />
+              <input id="product-price" type="number" min="0" required placeholder="Giá" />
+              <button type="submit">Thêm</button>
+            </form>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Tên</th>
+                <th>Danh mục</th>
+                <th>Giá</th>
+                <th>Tồn kho</th>
+              </tr>
+            </thead>
+            <tbody id="product-table"></tbody>
+          </table>
+        </section>
+
+        <section id="orders" class="panel">
+          <h3>Đơn hàng gần đây</h3>
+          <ul id="order-list" class="order-list"></ul>
+        </section>
+
+        <section id="customers" class="panel">
+          <h3>Khách hàng nổi bật</h3>
+          <ul id="customer-list" class="customer-list"></ul>
+        </section>
+
+        <section id="admins" class="panel">
+          <div class="panel-header">
+            <h3>Quản lý user admin</h3>
+            <form id="admin-form">
+              <input id="admin-name" required placeholder="Họ tên" />
+              <input id="admin-email" required type="email" placeholder="Email" />
+              <select id="admin-role">
+                <option value="Quản trị viên">Quản trị viên</option>
+                <option value="Biên tập viên">Biên tập viên</option>
+                <option value="Hỗ trợ">Hỗ trợ</option>
+              </select>
+              <button type="submit">Thêm user</button>
+            </form>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table"></tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
