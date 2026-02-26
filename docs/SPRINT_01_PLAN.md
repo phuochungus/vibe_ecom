@@ -2,7 +2,7 @@
 
 ## 1. Sprint Information
 - Sprint ID: `SPRINT-01`
-- Sprint Goal: Hoàn thiện MVP end-to-end cho luồng bán hàng golf store (đăng nhập -> đặt hàng -> thanh toán -> giao vận -> tracking -> khiếu nại -> báo cáo).
+- Sprint Goal: Hoàn thiện MVP end-to-end cho luồng bán hàng golf store (đăng nhập -> đặt hàng -> thanh toán -> giao vận -> tracking -> báo cáo).
 - Thời gian sprint: `26/02/2026 - 11/03/2026` (2 tuần).
 - Release mục tiêu: `v1.0.0`.
 
@@ -14,7 +14,7 @@
 3. `Dev`: thiết kế, code, unit test.
 4. `QA`: test tích hợp, regression, UAT support.
 - Capacity mục tiêu: `70 SP`.
-- Planned scope: `68 SP`.
+- Planned scope: `60 SP`.
 
 ## 3. Sprint Scope (Committed)
 - `US-01` Đăng nhập user.
@@ -24,7 +24,6 @@
 - `US-05` Tracking đơn hàng.
 - `US-06` Thông báo hệ thống.
 - `US-07` Báo cáo doanh thu.
-- `US-08` Quản lý khiếu nại.
 
 ## 4. Sprint Board Workflow
 - Trạng thái công việc:
@@ -56,15 +55,15 @@
 - Code hoàn thành và pass code review.
 - Unit/integration test pass.
 - QA pass test case chính.
-- UAT pass theo tiêu chí `UAT-01..UAT-08`.
-- Có audit log cho thay đổi trạng thái đơn, thanh toán, khiếu nại.
+- UAT pass theo tiêu chí áp dụng cho scope Sprint-01.
+- Có audit log cho thay đổi trạng thái đơn và thanh toán.
 - Tài liệu cập nhật: BRD, backlog, changelog.
 
 ## 8. Milestone kiểm soát
 - `M1 - 01/03/2026`: xong US-01, US-02.
 - `M2 - 05/03/2026`: xong US-03, US-04.
 - `M3 - 08/03/2026`: xong US-05, US-06.
-- `M4 - 10/03/2026`: xong US-07, US-08 + regression.
+- `M4 - 10/03/2026`: xong US-07 + regression.
 - `Release Candidate - 11/03/2026`: UAT sign-off và đóng sprint.
 
 ## 9. Quản lý rủi ro sprint

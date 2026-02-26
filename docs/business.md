@@ -1,7 +1,7 @@
 # Tài liệu yêu cầu nghiệp vụ (Business Requirements & Business Rules)
 
 ## 1. Mục tiêu hệ thống
-Xây dựng hệ thống cửa hàng gậy golf cho phép khách hàng mua hàng trực tuyến và đội ngũ quản trị vận hành toàn bộ quy trình bán hàng, thanh toán, giao hàng, khiếu nại và báo cáo doanh thu.
+Xây dựng hệ thống cửa hàng gậy golf cho phép khách hàng mua hàng trực tuyến và đội ngũ quản trị vận hành toàn bộ quy trình bán hàng, thanh toán, giao hàng và báo cáo doanh thu.
 
 ## 2. Phạm vi
 - Kênh: Web app.
@@ -15,12 +15,10 @@ Xây dựng hệ thống cửa hàng gậy golf cho phép khách hàng mua hàng
 - Xem sản phẩm, đặt hàng, thanh toán tự động.
 - Theo dõi trạng thái đơn hàng.
 - Nhận thông báo hệ thống.
-- Gửi và theo dõi khiếu nại.
 
 ### 3.2 Admin
 - Quản lý sản phẩm (thêm/sửa/xóa, giá, tồn kho, trạng thái bán).
 - Quản lý đơn hàng (xác nhận, xử lý, giao vận, hủy/hoàn).
-- Quản lý khiếu nại (tiếp nhận, xử lý, phản hồi, đóng vụ việc).
 - Theo dõi thanh toán và đối soát.
 - Xem báo cáo doanh thu.
 - Gửi thông báo đến user.
@@ -28,7 +26,7 @@ Xây dựng hệ thống cửa hàng gậy golf cho phép khách hàng mua hàng
 ## 4. Yêu cầu nghiệp vụ chức năng
 ### 4.1 Đăng nhập người dùng
 - Hệ thống cho phép user đăng ký, đăng nhập và đăng xuất.
-- Chỉ user đã đăng nhập mới được đặt hàng, theo dõi đơn và gửi khiếu nại.
+- Chỉ user đã đăng nhập mới được đặt hàng và theo dõi đơn.
 
 ### 4.2 Quản lý sản phẩm (Admin)
 - Admin tạo mới sản phẩm với thông tin bắt buộc: mã sản phẩm, tên, giá bán, tồn kho, trạng thái.
@@ -49,16 +47,11 @@ Xây dựng hệ thống cửa hàng gậy golf cho phép khách hàng mua hàng
 - Mỗi lần thay đổi trạng thái đơn, hệ thống ghi nhận mốc thời gian và người/cơ chế cập nhật.
 
 ### 4.6 Thông báo
-- Hệ thống gửi thông báo cho user khi: đặt hàng thành công, thanh toán thành công/thất bại, đơn chuyển trạng thái, đơn hủy/hoàn, khiếu nại được cập nhật.
+- Hệ thống gửi thông báo cho user khi: đặt hàng thành công, thanh toán thành công/thất bại, đơn chuyển trạng thái, đơn hủy/hoàn.
 
 ### 4.7 Báo cáo doanh thu
 - Admin xem báo cáo doanh thu theo ngày/tháng/năm.
 - Báo cáo có khả năng lọc theo khoảng thời gian và trạng thái đơn hàng.
-
-### 4.8 Quản lý khiếu nại
-- User tạo khiếu nại gắn với đơn hàng.
-- Admin tiếp nhận, phân loại, xử lý và phản hồi.
-- User theo dõi tiến trình xử lý khiếu nại.
 
 ## 5. Business Rules
 ### 5.1 Tài khoản và đăng nhập
@@ -94,26 +87,20 @@ Xây dựng hệ thống cửa hàng gậy golf cho phép khách hàng mua hàng
 - `BR-REV-02`: Đơn hoàn tiền phải được trừ khỏi doanh thu trong kỳ tương ứng.
 - `BR-REV-03`: Dữ liệu báo cáo phải truy vết được tới mã đơn hàng.
 
-### 5.7 Khiếu nại
-- `BR-CMP-01`: Khiếu nại phải gắn với một đơn hàng hợp lệ.
-- `BR-CMP-02`: Mỗi khiếu nại có SLA xử lý mặc định 48 giờ làm việc.
-- `BR-CMP-03`: Khiếu nại chỉ được đóng khi đã có phản hồi cuối cùng từ admin.
-
 ## 6. Phi chức năng (NFR)
 - Hiệu năng: thời gian phản hồi API nghiệp vụ chính < 3 giây trong điều kiện tải thông thường.
 - Bảo mật: mật khẩu lưu dưới dạng băm; dữ liệu thanh toán tuân thủ quy định bảo mật cổng thanh toán.
-- Audit: toàn bộ thao tác thay đổi trạng thái đơn, thanh toán, khiếu nại phải có nhật ký.
+- Audit: toàn bộ thao tác thay đổi trạng thái đơn và thanh toán phải có nhật ký.
 - Sẵn sàng: hệ thống hỗ trợ vận hành liên tục, có cơ chế backup dữ liệu định kỳ.
 
 ## 7. KPI đề xuất
 - Tỷ lệ thanh toán thành công.
 - Tỷ lệ giao hàng đúng hạn.
 - Tỷ lệ đơn hoàn tất/đơn tạo mới.
-- Thời gian xử lý khiếu nại trung bình.
 - Doanh thu theo kỳ và tăng trưởng theo tháng.
 
 ## 8. Tiêu chí nghiệm thu mức nghiệp vụ
 - User có thể đăng nhập, đặt hàng, thanh toán và theo dõi đơn hàng end-to-end.
-- Admin quản lý được sản phẩm, đơn hàng, khiếu nại và xem báo cáo doanh thu.
+- Admin quản lý được sản phẩm, đơn hàng và xem báo cáo doanh thu.
 - Hệ thống gửi thông báo đúng sự kiện và đúng người nhận.
-- Các business rule trọng yếu (`BR-ORD`, `BR-PAY`, `BR-REV`, `BR-CMP`) được áp dụng nhất quán.
+- Các business rule trọng yếu (`BR-ORD`, `BR-PAY`, `BR-REV`) được áp dụng nhất quán.

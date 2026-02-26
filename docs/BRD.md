@@ -2,7 +2,7 @@
 
 ## 1. Thông tin tài liệu
 - Mã tài liệu: `BRD-GOLF-STORE-001`
-- Phiên bản: `1.1`
+- Phiên bản: `1.2`
 - Ngày ban hành: `26/02/2026`
 - Người soạn: `BA/PO`
 - Trạng thái: `Baseline for Sprint-01`
@@ -10,13 +10,12 @@
 ## 2. Mục tiêu kinh doanh
 - Số hóa quy trình bán gậy golf trực tuyến cho khách hàng.
 - Tăng tỷ lệ chốt đơn nhờ thanh toán tự động và theo dõi đơn hàng minh bạch.
-- Nâng cao vận hành nội bộ qua quản lý sản phẩm, đơn hàng, khiếu nại và báo cáo doanh thu tập trung.
+- Nâng cao vận hành nội bộ qua quản lý sản phẩm, đơn hàng và báo cáo doanh thu tập trung.
 
 ## 3. KPI nghiệp vụ
 - Tỷ lệ thanh toán thành công >= 90%.
 - Tỷ lệ đơn hoàn tất/đơn tạo mới >= 80%.
 - Tỷ lệ giao hàng đúng hạn >= 95%.
-- 95% khiếu nại được phản hồi lần đầu trong 48 giờ làm việc.
 
 ## 4. Phạm vi
 ### 4.1 In Scope
@@ -27,7 +26,6 @@
 - Tracking trạng thái đơn hàng.
 - Thông báo theo sự kiện nghiệp vụ.
 - Báo cáo doanh thu theo kỳ.
-- Quản lý khiếu nại.
 
 ### 4.2 Out of Scope
 - Quản lý chương trình loyalty/điểm thưởng.
@@ -35,8 +33,8 @@
 - CSKH qua tổng đài tích hợp VOIP.
 
 ## 5. Đối tượng sử dụng và stakeholder
-- `User`: khách mua hàng, theo dõi đơn và khiếu nại.
-- `Admin`: quản lý sản phẩm, đơn hàng, khiếu nại, báo cáo.
+- `User`: khách mua hàng, theo dõi đơn.
+- `Admin`: quản lý sản phẩm, đơn hàng, báo cáo.
 - `Kế toán` (stakeholder gián tiếp): đối soát thanh toán và doanh thu.
 - `Vận hành` (stakeholder gián tiếp): theo dõi xử lý đơn và SLA.
 
@@ -54,13 +52,6 @@
 5. Hệ thống nhận kết quả thanh toán tự động.
 6. Admin xử lý và giao hàng.
 7. User theo dõi đơn đến khi `Hoàn tất`.
-
-### 7.2 Quy trình khiếu nại
-1. User tạo khiếu nại từ đơn hàng.
-2. Admin tiếp nhận và phân loại.
-3. Admin xử lý và phản hồi.
-4. User xác nhận/đồng thuận kết quả.
-5. Khiếu nại được đóng.
 
 ## 8. Danh sách Use Case
 ### UC-01: User đăng nhập
@@ -120,7 +111,7 @@
 
 ### UC-06: Hệ thống gửi thông báo
 - Actor: `System`
-- Sự kiện kích hoạt: đặt hàng, thanh toán, đổi trạng thái đơn, cập nhật khiếu nại.
+- Sự kiện kích hoạt: đặt hàng, thanh toán, đổi trạng thái đơn.
 - Kết quả: User nhận thông báo đúng sự kiện, đúng người nhận.
 
 ### UC-07: Admin xem báo cáo doanh thu
@@ -132,19 +123,9 @@
 3. Hệ thống trả dữ liệu tổng hợp + chi tiết theo đơn.
 - Hậu điều kiện: Admin có dữ liệu theo dõi doanh thu.
 
-### UC-08: User/Admin quản lý khiếu nại
-- Actor: `User`, `Admin`
-- Tiền điều kiện: User có đơn hàng hợp lệ.
-- Luồng chính:
-1. User tạo khiếu nại.
-2. Admin tiếp nhận, xử lý, phản hồi.
-3. Hệ thống cập nhật trạng thái khiếu nại.
-4. Đóng khiếu nại.
-- Hậu điều kiện: Vụ việc được xử lý và lưu vết.
-
 ## 9. Yêu cầu chức năng chi tiết (Functional Requirements)
 - `FR-ACC-01`: Hệ thống cho phép user đăng nhập/đăng xuất.
-- `FR-ACC-02`: Chỉ user đăng nhập mới được checkout, theo dõi đơn, gửi khiếu nại.
+- `FR-ACC-02`: Chỉ user đăng nhập mới được checkout, theo dõi đơn.
 - `FR-PROD-01`: Admin thêm/sửa/xóa sản phẩm.
 - `FR-PROD-02`: Admin cập nhật giá, tồn kho, trạng thái bán.
 - `FR-ORD-01`: Hệ thống tạo mã đơn hàng duy nhất.
@@ -155,8 +136,6 @@
 - `FR-NOTI-01`: Tự động gửi thông báo theo sự kiện nghiệp vụ.
 - `FR-REV-01`: Admin xem báo cáo doanh thu theo ngày/tháng/năm.
 - `FR-REV-02`: Báo cáo cho phép lọc theo trạng thái đơn và truy vết theo mã đơn.
-- `FR-CMP-01`: User tạo khiếu nại gắn với đơn hàng.
-- `FR-CMP-02`: Admin xử lý, phản hồi, đóng khiếu nại theo SLA.
 
 ## 10. Business Rules
 - `BR-ACC-01`: Email/số điện thoại user là duy nhất.
@@ -179,14 +158,11 @@
 - `BR-REV-01`: Doanh thu thuần chỉ tính đơn `Hoàn tất`.
 - `BR-REV-02`: Đơn hoàn tiền bị trừ doanh thu trong kỳ.
 - `BR-REV-03`: Báo cáo doanh thu phải truy vết tới mã đơn.
-- `BR-CMP-01`: Khiếu nại phải gắn với đơn hợp lệ.
-- `BR-CMP-02`: SLA xử lý khiếu nại mặc định 48 giờ làm việc.
-- `BR-CMP-03`: Chỉ đóng khiếu nại sau phản hồi cuối cùng của admin.
 
 ## 11. Yêu cầu phi chức năng (NFR)
 - `NFR-PERF-01`: API nghiệp vụ chính phản hồi < 3 giây ở tải thông thường.
 - `NFR-SEC-01`: Mật khẩu lưu dạng băm; không lưu thông tin nhạy cảm thanh toán trái quy định.
-- `NFR-AUD-01`: Có audit log cho thao tác đổi trạng thái đơn, thanh toán, khiếu nại.
+- `NFR-AUD-01`: Có audit log cho thao tác đổi trạng thái đơn và thanh toán.
 - `NFR-AVL-01`: Có backup định kỳ và khả năng khôi phục dữ liệu.
 - `NFR-REL-01`: Tỷ lệ thành công xử lý callback thanh toán >= 99%.
 
@@ -196,14 +172,12 @@
 - `Order`: mã đơn, user, tổng tiền, trạng thái đơn, trạng thái thanh toán.
 - `PaymentTransaction`: mã giao dịch, mã đơn, số tiền, trạng thái, thời gian.
 - `ShipmentTracking`: mã đơn, trạng thái, timestamp, nguồn cập nhật.
-- `Complaint`: mã khiếu nại, mã đơn, nội dung, trạng thái, SLA.
 - `Notification`: người nhận, loại sự kiện, trạng thái gửi, thời gian gửi.
 
 ## 13. Báo cáo nghiệp vụ
 - `RPT-01`: Doanh thu theo ngày/tháng/năm.
 - `RPT-02`: Tỷ lệ thanh toán thành công/thất bại.
 - `RPT-03`: Tỷ lệ đơn hoàn tất, hủy, hoàn tiền.
-- `RPT-04`: Tồn đọng khiếu nại theo SLA.
 
 ## 14. Acceptance Criteria tổng thể (UAT)
 - `UAT-01`: User đăng nhập thành công mới thực hiện checkout.
@@ -211,9 +185,9 @@
 - `UAT-03`: Thanh toán online tự động cập nhật trạng thái trong hệ thống.
 - `UAT-04`: User theo dõi được lịch sử đơn hàng theo timeline.
 - `UAT-05`: Hệ thống gửi thông báo đúng sự kiện và không trùng.
-- `UAT-06`: Admin quản lý được sản phẩm/đơn/khiếu nại từ giao diện quản trị.
+- `UAT-06`: Admin quản lý được sản phẩm/đơn từ giao diện quản trị.
 - `UAT-07`: Báo cáo doanh thu phản ánh đúng dữ liệu đơn hoàn tất và hoàn tiền.
-- `UAT-08`: Audit log truy vết được toàn bộ thay đổi trọng yếu.
+- `UAT-08`: Audit log truy vết được toàn bộ thay đổi trọng yếu thuộc đơn hàng/thanh toán.
 
 ## 15. Rủi ro và kiểm soát
 - Rủi ro trễ callback thanh toán -> cơ chế retry + đối soát cuối ngày.
@@ -227,12 +201,10 @@
 - `UC-04` -> `FR-TRK-*` -> `BR-TRK-*` -> `UAT-04`.
 - `UC-06` -> `FR-NOTI-*` -> `BR-NOTI-*` -> `UAT-05`.
 - `UC-07` -> `FR-REV-*` -> `BR-REV-*` -> `UAT-07`.
-- `UC-08` -> `FR-CMP-*` -> `BR-CMP-*` -> `UAT-06`.
-
 
 ## 17. Agile Delivery Links
-- Product backlog: PRODUCT_BACKLOG.md.
-- Sprint plan: SPRINT_01_PLAN.md.
-- Versioning: VERSIONING.md.
-- Release history: CHANGELOG.md.
+- Product backlog: `PRODUCT_BACKLOG.md`.
+- Sprint plan: `SPRINT_01_PLAN.md`.
+- Versioning: `VERSIONING.md`.
+- Release history: `CHANGELOG.md`.
 

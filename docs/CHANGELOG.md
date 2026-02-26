@@ -11,12 +11,14 @@ Tất cả thay đổi đáng chú ý của dự án sẽ được ghi trong fil
 - Tracking đơn hàng cho user.
 - Thông báo theo sự kiện nghiệp vụ.
 - Báo cáo doanh thu theo kỳ cho admin.
-- Quản lý khiếu nại theo SLA.
+
+### Changed
+- Phạm vi sản phẩm loại bỏ hoàn toàn feature khiếu nại theo quyết định PO.
 
 ### Documentation
-- Thêm BRD chuẩn nghiệp vụ.
-- Thêm backlog và kế hoạch Sprint-01.
-- Thêm chiến lược versioning theo SemVer.
+- Cập nhật BRD và business requirements theo phạm vi mới.
+- Cập nhật backlog và kế hoạch Sprint-01 theo scope không có complaint.
+- Cập nhật tài liệu CSDL BE tương ứng.
 
 ## [0.9.0] - 2026-02-26
 ### Added
