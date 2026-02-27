@@ -1,28 +1,26 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
+	"golf-store/be-mono/internal/modules/payment/repository"
 	"golf-store/be-mono/internal/platform/db"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
 type Service struct {
-	db     *gorm.DB
+	repo   repository.Repository
 	orders *ordersvc.Service
 }
 
-func New(db *gorm.DB, orders *ordersvc.Service) *Service {
-	return &Service{db: db, orders: orders}
+func New(repo repository.Repository, orders *ordersvc.Service) *Service {
+	return &Service{repo: repo, orders: orders}
 }
 
 type CreatePaymentInput struct {
@@ -46,28 +44,26 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "Idempotency-Key is required"}
 	}
 
-	var order db.OrderEntity
-	err := s.db.Select("id", "user_id", "total_amount", "currency_code").Where("id = ?", input.OrderID).Take(&order).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, apperrors.ErrNotFound
-	}
+	order, err := s.repo.FindOrder(input.OrderID)
 	if err != nil {
+		if strings.Contains(err.Error(), "record not found") {
+			return nil, apperrors.ErrNotFound
+		}
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query order"}
 	}
 	if order.UserID != input.UserID {
 		return nil, apperrors.ErrNotFound
 	}
 
-	var existing db.PaymentTransactionEntity
-	err = s.db.Where("order_id = ? AND idempotency_key = ?", input.OrderID, idemKey).Take(&existing).Error
-	if err == nil {
+	existing, err := s.repo.FindPaymentByIdempotency(input.OrderID, idemKey)
+	if err == nil && existing != nil && existing.ID != "" {
 		return &CreatePaymentOutput{
 			PaymentID:   existing.ID,
 			Status:      existing.Status,
 			CheckoutURL: fakeCheckoutURL(input.Provider, existing.ID),
 		}, nil
 	}
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !strings.Contains(err.Error(), "record not found") {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query payment idempotency"}
 	}
 
@@ -90,7 +86,7 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
-	if err := s.db.Create(&payment).Error; err != nil {
+	if err := s.repo.CreatePayment(&payment); err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusConflict, Code: "PAYMENT_DUPLICATE", Message: "Duplicate payment request"}
 	}
 
@@ -102,9 +98,9 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 }
 
 func (s *Service) ListByOrderForUser(orderID string, userID string) ([]*db.PaymentTransactionEntity, *apperrors.APIError) {
-	var order db.OrderEntity
-	if err := s.db.Select("id", "user_id").Where("id = ?", orderID).Take(&order).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	order, err := s.repo.FindOrder(orderID)
+	if err != nil {
+		if strings.Contains(err.Error(), "record not found") {
 			return nil, apperrors.ErrNotFound
 		}
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query order"}
@@ -113,8 +109,8 @@ func (s *Service) ListByOrderForUser(orderID string, userID string) ([]*db.Payme
 		return nil, apperrors.ErrNotFound
 	}
 
-	entities := make([]db.PaymentTransactionEntity, 0)
-	if err := s.db.Where("order_id = ?", orderID).Order("created_at ASC").Find(&entities).Error; err != nil {
+	entities, err := s.repo.ListPaymentsByOrder(orderID)
+	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query payments"}
 	}
 
@@ -148,76 +144,28 @@ func (s *Service) ProcessWebhook(provider string, payload map[string]any) (map[s
 	finalState := db.PaymentTxnStateFailed
 	deduplicated := false
 
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		var duplicate db.PaymentTransactionEntity
-		if err := tx.Where("provider_txn_code = ?", providerTxnCode).Take(&duplicate).Error; err == nil {
-			deduplicated = true
-			paymentID = duplicate.ID
-			return nil
-		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query webhook dedupe"}
-		}
+	duplicate, err := s.repo.FindWebhookDuplicate(providerTxnCode)
+	if err == nil && duplicate != nil && duplicate.ID != "" {
+		deduplicated = true
+		paymentID = duplicate.ID
+	} else if err != nil && !strings.Contains(err.Error(), "record not found") {
+		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query webhook dedupe"}
+	}
 
-		var payment db.PaymentTransactionEntity
-		lockErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("order_id = ? AND provider = ? AND status = ?", orderID, provider, db.PaymentTxnStatePending).
-			Order("created_at ASC").
-			Take(&payment).Error
-		if lockErr != nil {
-			if !errors.Is(lockErr, gorm.ErrRecordNotFound) {
-				return &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query payment transaction"}
-			}
-
-			var order db.OrderEntity
-			if err := tx.Select("id", "total_amount", "currency_code").Where("id = ?", orderID).Take(&order).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return apperrors.ErrNotFound
-				}
-				return &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query order amount"}
-			}
-
-			payment = db.PaymentTransactionEntity{
-				ID:              uuid.NewString(),
-				OrderID:         orderID,
-				TxnType:         db.PaymentTxnTypePayment,
-				Provider:        provider,
-				ProviderTxnCode: &providerTxnCode,
-				Amount:          order.TotalAmount,
-				CurrencyCode:    order.CurrencyCode,
-				Status:          db.PaymentTxnStatePending,
-				CreatedAt:       time.Now().UTC(),
-				UpdatedAt:       time.Now().UTC(),
-			}
-			if err := tx.Create(&payment).Error; err != nil {
-				return &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to create payment transaction"}
-			}
-		}
-
-		paymentID = payment.ID
+	if !deduplicated {
 		if status == "SUCCESS" || status == "PAID" {
 			finalState = db.PaymentTxnStateSuccess
 		} else {
 			finalState = db.PaymentTxnStateFailed
 		}
 
-		if err := tx.Model(&db.PaymentTransactionEntity{}).
-			Where("id = ?", paymentID).
-			Updates(map[string]any{
-				"provider_txn_code": providerTxnCode,
-				"provider_response": status,
-				"status":            finalState,
-				"updated_at":        time.Now().UTC(),
-			}).Error; err != nil {
-			return &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to update payment transaction"}
+		paymentID, err = s.repo.ProcessWebhookTx(orderID, provider, providerTxnCode, status, finalState)
+		if err != nil {
+			if strings.Contains(err.Error(), "record not found") {
+				return nil, apperrors.ErrNotFound
+			}
+			return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to process payment webhook"}
 		}
-
-		return nil
-	})
-	if err != nil {
-		if apiErr, ok := err.(*apperrors.APIError); ok {
-			return nil, apiErr
-		}
-		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to commit payment webhook"}
 	}
 
 	if deduplicated {

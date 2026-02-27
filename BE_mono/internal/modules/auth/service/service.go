@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	"golf-store/be-mono/internal/modules/auth/repository"
 	"golf-store/be-mono/internal/platform/db"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
@@ -31,14 +32,14 @@ type JWTConfig struct {
 }
 
 type Service struct {
-	db         *gorm.DB
+	repo       repository.Repository
 	secret     []byte
 	issuer     string
 	accessTTL  time.Duration
 	refreshTTL time.Duration
 }
 
-func New(dbConn *gorm.DB, cfg JWTConfig) *Service {
+func New(repo repository.Repository, cfg JWTConfig) *Service {
 	secret := strings.TrimSpace(cfg.Secret)
 	if secret == "" {
 		panic("JWT secret is not configured")
@@ -55,7 +56,7 @@ func New(dbConn *gorm.DB, cfg JWTConfig) *Service {
 	}
 
 	return &Service{
-		db:         dbConn,
+		repo:       repo,
 		secret:     []byte(secret),
 		issuer:     issuer,
 		accessTTL:  cfg.AccessTTL,
@@ -85,7 +86,7 @@ type LoginResult struct {
 func (s *Service) Login(identifier string, password string) (*LoginResult, *apperrors.APIError) {
 	now := time.Now().UTC()
 
-	userEntity, err := s.findUserByIdentifier(identifier)
+	userEntity, err := s.repo.FindUserByIdentifier(identifier)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, &apperrors.APIError{Status: http.StatusUnauthorized, Code: "INVALID_CREDENTIALS", Message: "Invalid credentials"}
 	}
@@ -100,17 +101,12 @@ func (s *Service) Login(identifier string, password string) (*LoginResult, *appe
 	ok := s.verifyPassword(userEntity, password)
 	if !ok {
 		attempts := userEntity.FailedLoginAttempts + 1
-		updates := map[string]any{
-			"failed_login_attempts": attempts,
-			"updated_at":            now,
-		}
+		var lockTime *time.Time
 		if attempts >= 5 {
-			lockTime := now.Add(15 * time.Minute)
-			updates["locked_until"] = lockTime
-		} else {
-			updates["locked_until"] = nil
+			t := now.Add(15 * time.Minute)
+			lockTime = &t
 		}
-		_ = s.db.Model(&db.UserEntity{}).Where("id = ?", userEntity.ID).Updates(updates).Error
+		_ = s.repo.UpdateUserFailedLogins(userEntity.ID, attempts, lockTime, now)
 		return nil, &apperrors.APIError{Status: http.StatusUnauthorized, Code: "INVALID_CREDENTIALS", Message: "Invalid credentials"}
 	}
 
@@ -124,30 +120,14 @@ func (s *Service) Login(identifier string, password string) (*LoginResult, *appe
 	}
 	expiresAt := now.Add(s.refreshTTL)
 
-	if err := s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&db.UserEntity{}).
-			Where("id = ?", userEntity.ID).
-			Updates(map[string]any{
-				"failed_login_attempts": 0,
-				"locked_until":          nil,
-				"last_login_at":         now,
-				"updated_at":            now,
-			}).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Where("user_id = ?", userEntity.ID).Delete(&db.AuthTokenEntity{}).Error; err != nil {
-			return err
-		}
-
-		return tx.Create(&db.AuthTokenEntity{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			UserID:       userEntity.ID,
-			ExpiresAt:    expiresAt,
-			CreatedAt:    now,
-		}).Error
-	}); err != nil {
+	newToken := &db.AuthTokenEntity{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		UserID:       userEntity.ID,
+		ExpiresAt:    expiresAt,
+		CreatedAt:    now,
+	}
+	if err := s.repo.UpdateUserLoginSuccessTx(userEntity.ID, now, newToken); err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to commit login"}
 	}
 
@@ -191,19 +171,14 @@ func (s *Service) Refresh(refreshToken string) (*LoginResult, *apperrors.APIErro
 	}
 	expiresAt := now.Add(s.refreshTTL)
 
-	if err := s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("refresh_token = ?", token).Delete(&db.AuthTokenEntity{}).Error; err != nil {
-			return err
-		}
-
-		return tx.Create(&db.AuthTokenEntity{
-			AccessToken:  newAccessToken,
-			RefreshToken: newRefreshToken,
-			UserID:       userEntity.ID,
-			ExpiresAt:    expiresAt,
-			CreatedAt:    now,
-		}).Error
-	}); err != nil {
+	newToken := &db.AuthTokenEntity{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+		UserID:       userEntity.ID,
+		ExpiresAt:    expiresAt,
+		CreatedAt:    now,
+	}
+	if err := s.repo.RefreshTokensTx(token, newToken, now); err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to commit token refresh"}
 	}
 
@@ -229,9 +204,9 @@ func (s *Service) Logout(token string) {
 
 	switch claims.TokenType {
 	case tokenTypeRefresh:
-		_ = s.db.Where("refresh_token = ?", t).Delete(&db.AuthTokenEntity{}).Error
+		_ = s.repo.DeleteTokenByRefreshToken(t)
 	default:
-		_ = s.db.Where("access_token = ?", t).Delete(&db.AuthTokenEntity{}).Error
+		_ = s.repo.DeleteTokensByAccessToken(t)
 	}
 }
 
@@ -242,23 +217,23 @@ func (s *Service) ResolveAccessToken(token string) (*db.UserEntity, bool) {
 		return nil, false
 	}
 
-	var userEntity db.UserEntity
-	err = s.db.Model(&db.UserEntity{}).
-		Joins("JOIN auth_tokens t ON t.user_id = users.id").
-		Where("t.access_token = ? AND t.user_id = ? AND t.expires_at > ?", t, claims.Subject, time.Now().UTC()).
-		Take(&userEntity).Error
+	userEntity, err := s.repo.ResolveAccessToken(t, time.Now().UTC())
 	if err != nil {
 		return nil, false
 	}
-	return sanitizeUser(&userEntity), true
+	// ensure Subject matches
+	if userEntity.ID != claims.Subject {
+		return nil, false
+	}
+	return sanitizeUser(userEntity), true
 }
 
 func (s *Service) Profile(userID string) (*db.UserEntity, bool) {
-	var userEntity db.UserEntity
-	if err := s.db.Where("id = ?", userID).Take(&userEntity).Error; err != nil {
+	userEntity, err := s.repo.FindUserByID(userID)
+	if err != nil {
 		return nil, false
 	}
-	return sanitizeUser(&userEntity), true
+	return sanitizeUser(userEntity), true
 }
 
 func (s *Service) verifyPassword(user *db.UserEntity, plain string) bool {
@@ -276,25 +251,11 @@ func (s *Service) verifyPassword(user *db.UserEntity, plain string) bool {
 
 func (s *Service) findUserByIdentifier(identifier string) (*db.UserEntity, error) {
 	lookup := strings.TrimSpace(identifier)
-	user := &db.UserEntity{}
-	if err := s.db.
-		Where("LOWER(email) = LOWER(?) OR LOWER(phone) = LOWER(?)", lookup, lookup).
-		Take(user).Error; err != nil {
-		return nil, err
-	}
-	return user, nil
+	return s.repo.FindUserByIdentifier(lookup)
 }
 
 func (s *Service) findUserByRefreshToken(refreshToken string, userID string, now time.Time) (*db.UserEntity, error) {
-	user := &db.UserEntity{}
-	if err := s.db.
-		Model(&db.UserEntity{}).
-		Joins("JOIN auth_tokens t ON t.user_id = users.id").
-		Where("t.refresh_token = ? AND t.user_id = ? AND t.expires_at > ?", refreshToken, userID, now).
-		Take(user).Error; err != nil {
-		return nil, err
-	}
-	return user, nil
+	return s.repo.FindUserByRefreshToken(refreshToken, userID, now)
 }
 
 func (s *Service) signToken(user *db.UserEntity, tokenType string, now time.Time, ttl time.Duration) (string, error) {

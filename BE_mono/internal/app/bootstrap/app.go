@@ -10,16 +10,22 @@ import (
 
 	"golf-store/be-mono/internal/app/server"
 	authhttp "golf-store/be-mono/internal/modules/auth/http"
+	authrepository "golf-store/be-mono/internal/modules/auth/repository"
 	authsvc "golf-store/be-mono/internal/modules/auth/service"
 	notificationhttp "golf-store/be-mono/internal/modules/notification/http"
+	notificationrepository "golf-store/be-mono/internal/modules/notification/repository"
 	notificationsvc "golf-store/be-mono/internal/modules/notification/service"
 	orderhttp "golf-store/be-mono/internal/modules/order/http"
+	orderrepository "golf-store/be-mono/internal/modules/order/repository"
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
 	paymenthttp "golf-store/be-mono/internal/modules/payment/http"
+	paymentrepository "golf-store/be-mono/internal/modules/payment/repository"
 	paymentsvc "golf-store/be-mono/internal/modules/payment/service"
 	producthttp "golf-store/be-mono/internal/modules/product/http"
+	productrepository "golf-store/be-mono/internal/modules/product/repository"
 	productsvc "golf-store/be-mono/internal/modules/product/service"
 	reportinghttp "golf-store/be-mono/internal/modules/reporting/http"
+	reportingrepository "golf-store/be-mono/internal/modules/reporting/repository"
 	reportingsvc "golf-store/be-mono/internal/modules/reporting/service"
 	"golf-store/be-mono/internal/platform/config"
 	"golf-store/be-mono/internal/platform/db"
@@ -47,17 +53,23 @@ func New(cfg config.Config) (*App, error) {
 	}
 
 	health := server.NewHealthHandler(cfg.ServiceName, database)
-	authService := authsvc.New(database, authsvc.JWTConfig{
+	authRepo := authrepository.NewGorm(database)
+	authService := authsvc.New(authRepo, authsvc.JWTConfig{
 		Secret:     cfg.JWTSecret,
 		Issuer:     cfg.JWTIssuer,
 		AccessTTL:  time.Duration(cfg.JWTAccessTTLMinutes) * time.Minute,
 		RefreshTTL: time.Duration(cfg.JWTRefreshTTLMinutes) * time.Minute,
 	})
-	productService := productsvc.New(database)
-	orderService := ordersvc.New(database)
-	paymentService := paymentsvc.New(database, orderService)
-	notificationService := notificationsvc.New(database)
-	reportingService := reportingsvc.New(database)
+	productRepo := productrepository.NewGorm(database)
+	productService := productsvc.New(productRepo)
+	orderRepo := orderrepository.NewGorm(database)
+	orderService := ordersvc.New(orderRepo)
+	paymentRepo := paymentrepository.NewGorm(database)
+	paymentService := paymentsvc.New(paymentRepo, orderService)
+	notificationRepo := notificationrepository.NewGorm(database)
+	notificationService := notificationsvc.New(notificationRepo)
+	reportingRepo := reportingrepository.NewGorm(database)
+	reportingService := reportingsvc.New(reportingRepo)
 
 	router := server.NewRouter(health, server.RouteModules{
 		Auth:          authhttp.New(authService),

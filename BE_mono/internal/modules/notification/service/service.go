@@ -3,20 +3,18 @@ package service
 import (
 	"net/http"
 	"strings"
-	"time"
 
-	"gorm.io/gorm"
-
+	"golf-store/be-mono/internal/modules/notification/repository"
 	"golf-store/be-mono/internal/platform/db"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
 type Service struct {
-	db *gorm.DB
+	repo repository.Repository
 }
 
-func New(db *gorm.DB) *Service {
-	return &Service{db: db}
+func New(repo repository.Repository) *Service {
+	return &Service{repo: repo}
 }
 
 type ListInput struct {
@@ -42,25 +40,21 @@ func (s *Service) List(input ListInput) ListOutput {
 		input.PageSize = 20
 	}
 
-	query := s.db.Model(&db.NotificationEntity{}).Where("user_id = ?", input.UserID)
-	if strings.TrimSpace(input.Status) != "" {
-		query = query.Where("status = ?", strings.ToUpper(strings.TrimSpace(input.Status)))
+	filter := repository.ListFilter{
+		UserID:   input.UserID,
+		Status:   strings.ToUpper(strings.TrimSpace(input.Status)),
+		Page:     input.Page,
+		PageSize: input.PageSize,
 	}
 
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
-		return ListOutput{Items: []*db.NotificationEntity{}, Page: input.Page, PageSize: input.PageSize}
-	}
-
-	offset := (input.Page - 1) * input.PageSize
-	entities := make([]db.NotificationEntity, 0)
-	if err := query.Order("created_at DESC").Limit(input.PageSize).Offset(offset).Find(&entities).Error; err != nil {
+	entities, total, err := s.repo.List(filter)
+	if err != nil {
 		return ListOutput{
 			Items:      []*db.NotificationEntity{},
 			Page:       input.Page,
 			PageSize:   input.PageSize,
-			Total:      int(total),
-			TotalPages: calcTotalPages(int(total), input.PageSize),
+			Total:      0,
+			TotalPages: 0,
 		}
 	}
 
@@ -79,38 +73,27 @@ func (s *Service) List(input ListInput) ListOutput {
 }
 
 func (s *Service) MarkRead(userID string, notificationID string) (*db.NotificationEntity, *apperrors.APIError) {
-	now := time.Now().UTC()
-	res := s.db.Model(&db.NotificationEntity{}).
-		Where("id = ? AND user_id = ?", notificationID, userID).
-		Updates(map[string]any{
-			"is_read":    true,
-			"updated_at": now,
-		})
-	if res.Error != nil {
+	rows, err := s.repo.MarkRead(userID, notificationID)
+	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to update notification"}
 	}
-	if res.RowsAffected == 0 {
+	if rows == 0 {
 		return nil, apperrors.ErrNotFound
 	}
 
-	var entity db.NotificationEntity
-	if err := s.db.Where("id = ?", notificationID).Take(&entity).Error; err != nil {
-		return nil, apperrors.ErrNotFound
+	entity, err := s.repo.FindByID(notificationID)
+	if err != nil {
+		if strings.Contains(err.Error(), "record not found") {
+			return nil, apperrors.ErrNotFound
+		}
+		return nil, apperrors.ErrNotFound // For any other fetch error post-update, returning not found is safer
 	}
-	return cloneNotification(&entity), nil
+	return cloneNotification(entity), nil
 }
 
 func (s *Service) MarkReadAll(userID string) int {
-	res := s.db.Model(&db.NotificationEntity{}).
-		Where("user_id = ? AND is_read = ?", userID, false).
-		Updates(map[string]any{
-			"is_read":    true,
-			"updated_at": time.Now().UTC(),
-		})
-	if res.Error != nil {
-		return 0
-	}
-	return int(res.RowsAffected)
+	rows, _ := s.repo.MarkReadAll(userID)
+	return int(rows)
 }
 
 func cloneNotification(entity *db.NotificationEntity) *db.NotificationEntity {

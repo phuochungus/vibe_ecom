@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/gorm"
-
+	"golf-store/be-mono/internal/modules/reporting/repository"
 	"golf-store/be-mono/internal/platform/db"
 )
 
 type Service struct {
-	db *gorm.DB
+	repo repository.Repository
 }
 
-func New(db *gorm.DB) *Service {
-	return &Service{db: db}
+func New(repo repository.Repository) *Service {
+	return &Service{repo: repo}
 }
 
 type SummaryOutput struct {
@@ -36,32 +35,11 @@ type OrdersOutput struct {
 }
 
 func (s *Service) Summary(from time.Time, to time.Time) SummaryOutput {
-	var grossRevenue int64
-	_ = s.db.Model(&db.OrderEntity{}).
-		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", db.OrderStatusCompleted, from, to).
-		Select("COALESCE(SUM(total_amount), 0)").
-		Scan(&grossRevenue).Error
-
-	var completedOrders int64
-	_ = s.db.Model(&db.OrderEntity{}).
-		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", db.OrderStatusCompleted, from, to).
-		Count(&completedOrders).Error
-
-	var refundAmount int64
-	_ = s.db.Model(&db.PaymentTransactionEntity{}).
-		Where("txn_type = ? AND status = ? AND created_at >= ? AND created_at < ?", db.PaymentTxnTypeRefund, db.PaymentTxnStateSuccess, from, to).
-		Select("COALESCE(SUM(amount), 0)").
-		Scan(&refundAmount).Error
-
-	var paymentTotal int64
-	_ = s.db.Model(&db.PaymentTransactionEntity{}).
-		Where("txn_type = ? AND created_at >= ? AND created_at < ?", db.PaymentTxnTypePayment, from, to).
-		Count(&paymentTotal).Error
-
-	var paymentSuccess int64
-	_ = s.db.Model(&db.PaymentTransactionEntity{}).
-		Where("txn_type = ? AND status = ? AND created_at >= ? AND created_at < ?", db.PaymentTxnTypePayment, db.PaymentTxnStateSuccess, from, to).
-		Count(&paymentSuccess).Error
+	grossRevenue, _ := s.repo.SumGrossRevenue(from, to)
+	completedOrders, _ := s.repo.CountCompletedOrders(from, to)
+	refundAmount, _ := s.repo.SumRefundAmount(from, to)
+	paymentTotal, _ := s.repo.CountPaymentTotal(from, to)
+	paymentSuccess, _ := s.repo.CountPaymentSuccess(from, to)
 
 	rate := "0.00"
 	if paymentTotal > 0 {
@@ -87,15 +65,8 @@ func (s *Service) Orders(from time.Time, to time.Time, page int, pageSize int) O
 		pageSize = 20
 	}
 
-	query := s.db.Model(&db.OrderEntity{}).
-		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", db.OrderStatusCompleted, from, to)
-
-	var total int64
-	_ = query.Count(&total).Error
-
-	offset := (page - 1) * pageSize
-	entities := make([]db.OrderEntity, 0)
-	if err := query.Order("placed_at DESC").Limit(pageSize).Offset(offset).Find(&entities).Error; err != nil {
+	entities, total, err := s.repo.ListCompletedOrders(from, to, page, pageSize)
+	if err != nil {
 		return OrdersOutput{Items: []*db.OrderEntity{}, Page: page, PageSize: pageSize, Total: int(total), TotalPages: calcTotalPages(int(total), pageSize)}
 	}
 
