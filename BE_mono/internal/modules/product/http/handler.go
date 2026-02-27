@@ -45,19 +45,8 @@ func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 
 func (h *Handler) ListProducts(c *gin.Context) {
 	//nullable int64
-	var min, max *int64
-	if c.Query("min_price") != "" {
-		val, err := strconv.ParseInt(c.Query("min_price"), 10, 64)
-		if err == nil {
-			min = &val
-		}
-	}
-	if c.Query("max_price") != "" {
-		val, err := strconv.ParseInt(c.Query("max_price"), 10, 64)
-		if err == nil {
-			max = &val
-		}
-	}
+	min := parseIntPtr(c.Query("min_price"))
+	max := parseIntPtr(c.Query("max_price"))
 
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
@@ -228,4 +217,15 @@ func parseIntDefault(value string, fallback int) int {
 		return fallback
 	}
 	return v
+}
+
+func parseIntPtr(value string) *int64 {
+	if value == "" {
+		return nil
+	}
+	v, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+	if err != nil || v <= 0 {
+		return nil
+	}
+	return &v
 }
