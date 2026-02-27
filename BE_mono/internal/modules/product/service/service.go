@@ -104,7 +104,7 @@ func (s *Service) List(input ListInput) ListOutput {
 
 	items := make([]*db.ProductEntity, 0, len(entities))
 	for i := range entities {
-		items = append(items, cloneProduct(&entities[i]))
+		items = append(items, &entities[i])
 	}
 
 	return ListOutput{
@@ -131,7 +131,7 @@ func (s *Service) GetByID(productID string, adminView bool) (*db.ProductEntity, 
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query product"}
 	}
 
-	return cloneProduct(&entity), nil
+	return &entity, nil
 }
 
 func (s *Service) AdminCreate(input AdminUpsertInput) (*db.ProductEntity, *apperrors.APIError) {
@@ -268,18 +268,4 @@ func calcTotalPages(total int, pageSize int) int {
 		return 0
 	}
 	return (total + pageSize - 1) / pageSize
-}
-
-func cloneProduct(entity *db.ProductEntity) *db.ProductEntity {
-	if entity == nil {
-		return nil
-	}
-	copy := *entity
-	copy.CreatedAt = copy.CreatedAt.UTC()
-	copy.UpdatedAt = copy.UpdatedAt.UTC()
-	if copy.DeletedAt != nil {
-		t := copy.DeletedAt.UTC()
-		copy.DeletedAt = &t
-	}
-	return &copy
 }
