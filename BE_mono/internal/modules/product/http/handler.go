@@ -1,0 +1,224 @@
+package http
+
+import (
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+
+	prodsvc "golf-store/be-mono/internal/modules/product/service"
+	"golf-store/be-mono/internal/shared/model"
+	"golf-store/be-mono/internal/shared/response"
+	"golf-store/be-mono/internal/shared/utils"
+)
+
+type Handler struct {
+	products *prodsvc.Service
+}
+
+func New(products *prodsvc.Service) *Handler {
+	return &Handler{products: products}
+}
+
+func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
+	rg.GET("/products", h.ListProducts)
+	rg.GET("/products/:product_id", h.GetProduct)
+}
+
+func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
+	rg.POST("/products", h.AdminCreateProduct)
+	rg.PATCH("/products/:product_id", h.AdminUpdateProduct)
+	rg.DELETE("/products/:product_id", h.AdminDeleteProduct)
+}
+
+func (h *Handler) ListProducts(c *gin.Context) {
+	minCents, _ := parseMoneyToCentsPtr(c.Query("min_price"))
+	maxCents, _ := parseMoneyToCentsPtr(c.Query("max_price"))
+
+	page := parseIntDefault(c.Query("page"), 1)
+	pageSize := parseIntDefault(c.Query("page_size"), 20)
+
+	out := h.products.List(prodsvc.ListInput{
+		Query:     c.Query("q"),
+		Status:    c.Query("status"),
+		MinCents:  minCents,
+		MaxCents:  maxCents,
+		Page:      page,
+		PageSize:  pageSize,
+		SortBy:    c.Query("sort"),
+		SortOrder: c.Query("order"),
+		AdminView: false,
+	})
+
+	items := make([]gin.H, 0, len(out.Items))
+	for _, p := range out.Items {
+		items = append(items, productResponse(p))
+	}
+
+	response.OK(c, gin.H{
+		"items": items,
+		"pagination": gin.H{
+			"page":        out.Page,
+			"page_size":   out.PageSize,
+			"total":       out.Total,
+			"total_pages": out.TotalPages,
+		},
+	})
+}
+
+func (h *Handler) GetProduct(c *gin.Context) {
+	productID := c.Param("product_id")
+	p, apiErr := h.products.GetByID(productID, false)
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+	response.OK(c, productResponse(p))
+}
+
+type adminUpsertRequest struct {
+	SKU         string `json:"sku"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Price       string `json:"price"`
+	Stock       *int   `json:"stock"`
+	Status      string `json:"status"`
+	ImageURL    string `json:"image_url"`
+}
+
+func (h *Handler) AdminCreateProduct(c *gin.Context) {
+	var req adminUpsertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
+		return
+	}
+
+	priceCents, err := parseMoneyToCents(req.Price)
+	if err != nil || priceCents <= 0 {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "price must be greater than 0", nil)
+		return
+	}
+	status, err := prodsvc.ParseStatus(req.Status)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "invalid product status", nil)
+		return
+	}
+	if req.Stock == nil {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "stock is required", nil)
+		return
+	}
+
+	product, apiErr := h.products.AdminCreate(prodsvc.AdminUpsertInput{
+		SKU:         req.SKU,
+		Name:        req.Name,
+		Description: req.Description,
+		PriceCents:  priceCents,
+		Stock:       *req.Stock,
+		Status:      status,
+		ImageURL:    req.ImageURL,
+	})
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+	response.Created(c, productResponse(product))
+}
+
+func (h *Handler) AdminUpdateProduct(c *gin.Context) {
+	productID := c.Param("product_id")
+	var req adminUpsertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
+		return
+	}
+
+	var priceCents int64
+	if strings.TrimSpace(req.Price) != "" {
+		parsed, err := parseMoneyToCents(req.Price)
+		if err != nil || parsed <= 0 {
+			response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "price must be greater than 0", nil)
+			return
+		}
+		priceCents = parsed
+	}
+
+	status := model.ProductStatus("")
+	if strings.TrimSpace(req.Status) != "" {
+		parsedStatus, err := prodsvc.ParseStatus(req.Status)
+		if err != nil {
+			response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "invalid product status", nil)
+			return
+		}
+		status = parsedStatus
+	}
+	stock := -1
+	if req.Stock != nil {
+		stock = *req.Stock
+	}
+
+	product, apiErr := h.products.AdminUpdate(productID, prodsvc.AdminUpsertInput{
+		SKU:         req.SKU,
+		Name:        req.Name,
+		Description: req.Description,
+		PriceCents:  priceCents,
+		Stock:       stock,
+		Status:      status,
+		ImageURL:    req.ImageURL,
+	})
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+
+	response.OK(c, productResponse(product))
+}
+
+func (h *Handler) AdminDeleteProduct(c *gin.Context) {
+	apiErr := h.products.AdminDelete(c.Param("product_id"))
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+	response.NoContent(c)
+}
+
+func productResponse(p *model.Product) gin.H {
+	return gin.H{
+		"id":          p.ID,
+		"sku":         p.SKU,
+		"name":        p.Name,
+		"description": p.Description,
+		"price":       utils.ToAmountString(p.PriceCents),
+		"stock":       p.Stock,
+		"status":      p.Status,
+		"image_url":   p.ImageURL,
+	}
+}
+
+func parseMoneyToCents(value string) (int64, error) {
+	f, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil {
+		return 0, err
+	}
+	return int64(f * 100), nil
+}
+
+func parseMoneyToCentsPtr(value string) (*int64, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+	v, err := parseMoneyToCents(value)
+	if err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+func parseIntDefault(value string, fallback int) int {
+	v, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || v <= 0 {
+		return fallback
+	}
+	return v
+}
