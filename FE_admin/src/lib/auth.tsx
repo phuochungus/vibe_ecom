@@ -24,11 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(getUserFromStorage)
 
   const login = useCallback(async (identifier: string, password: string) => {
-    const { data } = await api.post<LoginResponse>('/auth/login', { identifier, password })
-    localStorage.setItem('access_token', data.access_token)
-    localStorage.setItem('refresh_token', data.refresh_token)
-    localStorage.setItem('auth_user', JSON.stringify(data.user))
-    setUser(data.user)
+    const res = await api.post<{ success: boolean; data: LoginResponse }>('/auth/login', { identifier, password })
+    // Backend returns envelope: { success, data: { access_token, refresh_token, user, ... } }
+    const payload = res.data.data ?? (res.data as unknown as LoginResponse)
+    localStorage.setItem('access_token', payload.access_token)
+    localStorage.setItem('refresh_token', payload.refresh_token)
+    localStorage.setItem('auth_user', JSON.stringify(payload.user))
+    setUser(payload.user)
   }, [])
 
   const logout = useCallback(async () => {
