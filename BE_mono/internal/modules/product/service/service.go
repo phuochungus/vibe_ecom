@@ -1,31 +1,32 @@
 package service
 
 import (
-	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
+	"golf-store/be-mono/internal/platform/db"
 	apperrors "golf-store/be-mono/internal/shared/errors"
-	"golf-store/be-mono/internal/shared/model"
 )
 
 type Service struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func New(db *sql.DB) *Service {
+func New(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
 type ListInput struct {
 	Query     string
 	Status    string
-	MinCents  *int64
-	MaxCents  *int64
+	Min       *int64
+	Max       *int64
 	Page      int
 	PageSize  int
 	SortBy    string
@@ -34,7 +35,7 @@ type ListInput struct {
 }
 
 type ListOutput struct {
-	Items      []*model.Product
+	Items      []*db.ProductEntity
 	Page       int
 	PageSize   int
 	Total      int
@@ -45,9 +46,9 @@ type AdminUpsertInput struct {
 	SKU         string
 	Name        string
 	Description string
-	PriceCents  int64
+	Price       int64
 	Stock       int
-	Status      model.ProductStatus
+	Status      string
 	ImageURL    string
 }
 
@@ -59,98 +60,83 @@ func (s *Service) List(input ListInput) ListOutput {
 		input.PageSize = 20
 	}
 
-	where := []string{"deleted_at IS NULL"}
-	args := make([]any, 0)
+	query := s.db.Model(&db.ProductEntity{}).Where("deleted_at IS NULL")
 
 	if !input.AdminView {
-		where = append(where, "status = 'ACTIVE'")
+		query = query.Where("status = ?", db.ProductStatusActive)
 	}
 	if strings.TrimSpace(input.Status) != "" {
-		where = append(where, "status = ?")
-		args = append(args, strings.ToUpper(strings.TrimSpace(input.Status)))
+		query = query.Where("status = ?", strings.ToUpper(strings.TrimSpace(input.Status)))
 	}
 	if strings.TrimSpace(input.Query) != "" {
 		q := "%" + strings.ToLower(strings.TrimSpace(input.Query)) + "%"
-		where = append(where, "(LOWER(name) LIKE ? OR LOWER(sku) LIKE ?)")
-		args = append(args, q, q)
+		query = query.Where("(LOWER(name) LIKE ? OR LOWER(sku) LIKE ?)", q, q)
 	}
-	if input.MinCents != nil {
-		where = append(where, "price_cents >= ?")
-		args = append(args, *input.MinCents)
+	if input.Min != nil {
+		query = query.Where("price_cents >= ?", *input.Min)
 	}
-	if input.MaxCents != nil {
-		where = append(where, "price_cents <= ?")
-		args = append(args, *input.MaxCents)
+	if input.Max != nil {
+		query = query.Where("price_cents <= ?", *input.Max)
 	}
 
-	whereSQL := strings.Join(where, " AND ")
 	sortBy := sanitizeSortBy(input.SortBy)
 	sortOrder := sanitizeSortOrder(input.SortOrder)
 
-	var total int
-	countQuery := "SELECT COUNT(*) FROM products WHERE " + whereSQL
-	if err := s.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		return ListOutput{Items: []*model.Product{}, Page: input.Page, PageSize: input.PageSize, Total: 0, TotalPages: 0}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return ListOutput{Items: []*db.ProductEntity{}, Page: input.Page, PageSize: input.PageSize, Total: 0, TotalPages: 0}
 	}
 
 	offset := (input.Page - 1) * input.PageSize
-	listQuery := fmt.Sprintf(
-		`SELECT id, sku, name, description, price_cents, stock, status, image_url, created_at, updated_at, deleted_at
-		   FROM products
-		  WHERE %s
-		  ORDER BY %s %s
-		  LIMIT ? OFFSET ?`,
-		whereSQL, sortBy, sortOrder,
-	)
-	listArgs := append(args, input.PageSize, offset)
-	rows, err := s.db.Query(listQuery, listArgs...)
-	if err != nil {
-		return ListOutput{Items: []*model.Product{}, Page: input.Page, PageSize: input.PageSize, Total: total, TotalPages: calcTotalPages(total, input.PageSize)}
-	}
-	defer rows.Close()
-
-	items := make([]*model.Product, 0)
-	for rows.Next() {
-		p, err := scanProduct(rows)
-		if err != nil {
-			continue
+	var entities []db.ProductEntity
+	if err := query.Order(fmt.Sprintf("%s %s", sortBy, sortOrder)).
+		Limit(input.PageSize).
+		Offset(offset).
+		Find(&entities).Error; err != nil {
+		return ListOutput{
+			Items:      []*db.ProductEntity{},
+			Page:       input.Page,
+			PageSize:   input.PageSize,
+			Total:      int(total),
+			TotalPages: calcTotalPages(int(total), input.PageSize),
 		}
-		items = append(items, p)
+	}
+
+	items := make([]*db.ProductEntity, 0, len(entities))
+	for i := range entities {
+		items = append(items, cloneProduct(&entities[i]))
 	}
 
 	return ListOutput{
 		Items:      items,
 		Page:       input.Page,
 		PageSize:   input.PageSize,
-		Total:      total,
-		TotalPages: calcTotalPages(total, input.PageSize),
+		Total:      int(total),
+		TotalPages: calcTotalPages(int(total), input.PageSize),
 	}
 }
 
-func (s *Service) GetByID(productID string, adminView bool) (*model.Product, *apperrors.APIError) {
-	query := `SELECT id, sku, name, description, price_cents, stock, status, image_url, created_at, updated_at, deleted_at
-	            FROM products
-	           WHERE id = ? AND deleted_at IS NULL`
-	args := []any{productID}
+func (s *Service) GetByID(productID string, adminView bool) (*db.ProductEntity, *apperrors.APIError) {
+	query := s.db.Where("id = ? AND deleted_at IS NULL", productID)
 	if !adminView {
-		query += ` AND status = 'ACTIVE'`
+		query = query.Where("status = ?", db.ProductStatusActive)
 	}
 
-	row := s.db.QueryRow(query, args...)
-	product, err := scanProduct(row)
-	if err == sql.ErrNoRows {
+	var entity db.ProductEntity
+	err := query.Take(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, apperrors.ErrNotFound
 	}
 	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query product"}
 	}
 
-	return product, nil
+	return cloneProduct(&entity), nil
 }
 
-func (s *Service) AdminCreate(input AdminUpsertInput) (*model.Product, *apperrors.APIError) {
+func (s *Service) AdminCreate(input AdminUpsertInput) (*db.ProductEntity, *apperrors.APIError) {
 	now := time.Now().UTC()
-	if input.PriceCents <= 0 {
+	if input.Price <= 0 {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "price must be greater than 0"}
 	}
 	if input.Stock < 0 {
@@ -158,74 +144,66 @@ func (s *Service) AdminCreate(input AdminUpsertInput) (*model.Product, *apperror
 	}
 
 	id := uuid.NewString()
-	_, err := s.db.Exec(
-		`INSERT INTO products (id, sku, name, description, price_cents, stock, status, image_url, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id,
-		strings.TrimSpace(input.SKU),
-		strings.TrimSpace(input.Name),
-		strings.TrimSpace(input.Description),
-		input.PriceCents,
-		input.Stock,
-		input.Status,
-		strings.TrimSpace(input.ImageURL),
-		now,
-		now,
-	)
-	if err != nil {
+	status := input.Status
+	if status == "" {
+		status = db.ProductStatusActive
+	}
+	entity := &db.ProductEntity{
+		ID:          id,
+		SKU:         strings.TrimSpace(input.SKU),
+		Name:        strings.TrimSpace(input.Name),
+		Description: strings.TrimSpace(input.Description),
+		Price:       input.Price,
+		Stock:       input.Stock,
+		Status:      status,
+		ImageURL:    strings.TrimSpace(input.ImageURL),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	if err := s.db.Create(entity).Error; err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "invalid product payload"}
 	}
 
 	return s.GetByID(id, true)
 }
 
-func (s *Service) AdminUpdate(productID string, input AdminUpsertInput) (*model.Product, *apperrors.APIError) {
-	updates := make([]string, 0)
-	args := make([]any, 0)
+func (s *Service) AdminUpdate(productID string, input AdminUpsertInput) (*db.ProductEntity, *apperrors.APIError) {
+	updateMap := map[string]any{}
 
 	if strings.TrimSpace(input.SKU) != "" {
-		updates = append(updates, "sku = ?")
-		args = append(args, strings.TrimSpace(input.SKU))
+		updateMap["sku"] = strings.TrimSpace(input.SKU)
 	}
 	if strings.TrimSpace(input.Name) != "" {
-		updates = append(updates, "name = ?")
-		args = append(args, strings.TrimSpace(input.Name))
+		updateMap["name"] = strings.TrimSpace(input.Name)
 	}
 	if strings.TrimSpace(input.Description) != "" {
-		updates = append(updates, "description = ?")
-		args = append(args, strings.TrimSpace(input.Description))
+		updateMap["description"] = strings.TrimSpace(input.Description)
 	}
-	if input.PriceCents > 0 {
-		updates = append(updates, "price_cents = ?")
-		args = append(args, input.PriceCents)
+	if input.Price > 0 {
+		updateMap["price_cents"] = input.Price
 	}
 	if input.Stock >= 0 {
-		updates = append(updates, "stock = ?")
-		args = append(args, input.Stock)
+		updateMap["stock"] = input.Stock
 	}
 	if input.Status != "" {
-		updates = append(updates, "status = ?")
-		args = append(args, input.Status)
+		updateMap["status"] = input.Status
 	}
 	if strings.TrimSpace(input.ImageURL) != "" {
-		updates = append(updates, "image_url = ?")
-		args = append(args, strings.TrimSpace(input.ImageURL))
+		updateMap["image_url"] = strings.TrimSpace(input.ImageURL)
 	}
-	if len(updates) == 0 {
+	if len(updateMap) == 0 {
 		return s.GetByID(productID, true)
 	}
 
-	updates = append(updates, "updated_at = ?")
-	args = append(args, time.Now().UTC())
-	args = append(args, productID)
+	updateMap["updated_at"] = time.Now().UTC()
 
-	query := `UPDATE products SET ` + strings.Join(updates, ", ") + ` WHERE id = ? AND deleted_at IS NULL`
-	res, err := s.db.Exec(query, args...)
-	if err != nil {
+	res := s.db.Model(&db.ProductEntity{}).
+		Where("id = ? AND deleted_at IS NULL", productID).
+		Updates(updateMap)
+	if res.Error != nil {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "invalid product payload"}
 	}
-	affected, _ := res.RowsAffected()
-	if affected == 0 {
+	if res.RowsAffected == 0 {
 		return nil, apperrors.ErrNotFound
 	}
 
@@ -234,68 +212,37 @@ func (s *Service) AdminUpdate(productID string, input AdminUpsertInput) (*model.
 
 func (s *Service) AdminDelete(productID string) *apperrors.APIError {
 	now := time.Now().UTC()
-	res, err := s.db.Exec(
-		`UPDATE products
-		    SET deleted_at = ?, status = 'DISCONTINUED', updated_at = ?
-		  WHERE id = ? AND deleted_at IS NULL`,
-		now, now, productID,
-	)
-	if err != nil {
+	res := s.db.Model(&db.ProductEntity{}).
+		Where("id = ? AND deleted_at IS NULL", productID).
+		Updates(map[string]any{
+			"deleted_at": now,
+			"status":     db.ProductStatusDiscontinued,
+			"updated_at": now,
+		})
+	if res.Error != nil {
 		return &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to delete product"}
 	}
-	affected, _ := res.RowsAffected()
-	if affected == 0 {
+	if res.RowsAffected == 0 {
 		return apperrors.ErrNotFound
 	}
 	return nil
 }
 
-func ParseStatus(status string) (model.ProductStatus, error) {
+func ParseStatus(status string) (string, error) {
 	if status == "" {
-		return model.ProductStatusActive, nil
+		return db.ProductStatusActive, nil
 	}
 	up := strings.ToUpper(strings.TrimSpace(status))
 	switch up {
-	case string(model.ProductStatusActive):
-		return model.ProductStatusActive, nil
-	case string(model.ProductStatusInactive):
-		return model.ProductStatusInactive, nil
-	case string(model.ProductStatusDiscontinued):
-		return model.ProductStatusDiscontinued, nil
+	case db.ProductStatusActive:
+		return db.ProductStatusActive, nil
+	case db.ProductStatusInactive:
+		return db.ProductStatusInactive, nil
+	case db.ProductStatusDiscontinued:
+		return db.ProductStatusDiscontinued, nil
 	default:
 		return "", fmt.Errorf("invalid product status")
 	}
-}
-
-func scanProduct(scanner interface {
-	Scan(dest ...any) error
-}) (*model.Product, error) {
-	product := &model.Product{}
-	var status string
-	var deletedAt sql.NullTime
-
-	if err := scanner.Scan(
-		&product.ID,
-		&product.SKU,
-		&product.Name,
-		&product.Description,
-		&product.PriceCents,
-		&product.Stock,
-		&status,
-		&product.ImageURL,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-		&deletedAt,
-	); err != nil {
-		return nil, err
-	}
-
-	product.Status = model.ProductStatus(status)
-	if deletedAt.Valid {
-		t := deletedAt.Time.UTC()
-		product.DeletedAt = &t
-	}
-	return product, nil
 }
 
 func sanitizeSortBy(value string) string {
@@ -321,4 +268,18 @@ func calcTotalPages(total int, pageSize int) int {
 		return 0
 	}
 	return (total + pageSize - 1) / pageSize
+}
+
+func cloneProduct(entity *db.ProductEntity) *db.ProductEntity {
+	if entity == nil {
+		return nil
+	}
+	copy := *entity
+	copy.CreatedAt = copy.CreatedAt.UTC()
+	copy.UpdatedAt = copy.UpdatedAt.UTC()
+	if copy.DeletedAt != nil {
+		t := copy.DeletedAt.UTC()
+		copy.DeletedAt = &t
+	}
+	return &copy
 }

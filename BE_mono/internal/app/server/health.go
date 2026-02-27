@@ -1,20 +1,20 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"golf-store/be-mono/internal/shared/response"
 )
 
 type HealthHandler struct {
 	serviceName string
-	db          *sql.DB
+	db          *gorm.DB
 }
 
-func NewHealthHandler(serviceName string, db *sql.DB) *HealthHandler {
+func NewHealthHandler(serviceName string, db *gorm.DB) *HealthHandler {
 	return &HealthHandler{serviceName: serviceName, db: db}
 }
 
@@ -27,7 +27,12 @@ func (h *HealthHandler) Health(c *gin.Context) {
 
 func (h *HealthHandler) Ready(c *gin.Context) {
 	if h.db != nil {
-		if err := h.db.PingContext(c.Request.Context()); err != nil {
+		sqlDB, err := h.db.DB()
+		if err != nil {
+			response.Error(c, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "database not ready", nil)
+			return
+		}
+		if err := sqlDB.PingContext(c.Request.Context()); err != nil {
 			response.Error(c, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "database not ready", nil)
 			return
 		}

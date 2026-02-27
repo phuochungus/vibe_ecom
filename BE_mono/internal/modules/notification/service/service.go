@@ -1,20 +1,21 @@
 package service
 
 import (
-	"database/sql"
 	"net/http"
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
+	"golf-store/be-mono/internal/platform/db"
 	apperrors "golf-store/be-mono/internal/shared/errors"
-	"golf-store/be-mono/internal/shared/model"
 )
 
 type Service struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func New(db *sql.DB) *Service {
+func New(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
@@ -26,7 +27,7 @@ type ListInput struct {
 }
 
 type ListOutput struct {
-	Items      []*model.Notification
+	Items      []*db.NotificationEntity
 	Page       int
 	PageSize   int
 	Total      int
@@ -41,124 +42,89 @@ func (s *Service) List(input ListInput) ListOutput {
 		input.PageSize = 20
 	}
 
-	where := "user_id = ?"
-	args := []any{input.UserID}
+	query := s.db.Model(&db.NotificationEntity{}).Where("user_id = ?", input.UserID)
 	if strings.TrimSpace(input.Status) != "" {
-		where += " AND status = ?"
-		args = append(args, strings.ToUpper(strings.TrimSpace(input.Status)))
+		query = query.Where("status = ?", strings.ToUpper(strings.TrimSpace(input.Status)))
 	}
 
-	var total int
-	if err := s.db.QueryRow(`SELECT COUNT(*) FROM notifications WHERE `+where, args...).Scan(&total); err != nil {
-		return ListOutput{Items: []*model.Notification{}, Page: input.Page, PageSize: input.PageSize}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return ListOutput{Items: []*db.NotificationEntity{}, Page: input.Page, PageSize: input.PageSize}
 	}
 
 	offset := (input.Page - 1) * input.PageSize
-	listArgs := append(args, input.PageSize, offset)
-	rows, err := s.db.Query(
-		`SELECT id, user_id, channel, event_type, event_key, title, content, status, is_read, sent_at, created_at, updated_at
-		   FROM notifications
-		  WHERE `+where+`
-		  ORDER BY created_at DESC
-		  LIMIT ? OFFSET ?`,
-		listArgs...,
-	)
-	if err != nil {
-		return ListOutput{Items: []*model.Notification{}, Page: input.Page, PageSize: input.PageSize, Total: total, TotalPages: calcTotalPages(total, input.PageSize)}
-	}
-	defer rows.Close()
-
-	items := make([]*model.Notification, 0)
-	for rows.Next() {
-		n, err := scanNotification(rows)
-		if err != nil {
-			continue
+	entities := make([]db.NotificationEntity, 0)
+	if err := query.Order("created_at DESC").Limit(input.PageSize).Offset(offset).Find(&entities).Error; err != nil {
+		return ListOutput{
+			Items:      []*db.NotificationEntity{},
+			Page:       input.Page,
+			PageSize:   input.PageSize,
+			Total:      int(total),
+			TotalPages: calcTotalPages(int(total), input.PageSize),
 		}
-		items = append(items, n)
+	}
+
+	items := make([]*db.NotificationEntity, 0, len(entities))
+	for i := range entities {
+		items = append(items, cloneNotification(&entities[i]))
 	}
 
 	return ListOutput{
 		Items:      items,
 		Page:       input.Page,
 		PageSize:   input.PageSize,
-		Total:      total,
-		TotalPages: calcTotalPages(total, input.PageSize),
+		Total:      int(total),
+		TotalPages: calcTotalPages(int(total), input.PageSize),
 	}
 }
 
-func (s *Service) MarkRead(userID string, notificationID string) (*model.Notification, *apperrors.APIError) {
+func (s *Service) MarkRead(userID string, notificationID string) (*db.NotificationEntity, *apperrors.APIError) {
 	now := time.Now().UTC()
-	res, err := s.db.Exec(
-		`UPDATE notifications
-		    SET is_read = 1, updated_at = ?
-		  WHERE id = ? AND user_id = ?`,
-		now, notificationID, userID,
-	)
-	if err != nil {
+	res := s.db.Model(&db.NotificationEntity{}).
+		Where("id = ? AND user_id = ?", notificationID, userID).
+		Updates(map[string]any{
+			"is_read":    true,
+			"updated_at": now,
+		})
+	if res.Error != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to update notification"}
 	}
-	affected, _ := res.RowsAffected()
-	if affected == 0 {
+	if res.RowsAffected == 0 {
 		return nil, apperrors.ErrNotFound
 	}
 
-	row := s.db.QueryRow(
-		`SELECT id, user_id, channel, event_type, event_key, title, content, status, is_read, sent_at, created_at, updated_at
-		   FROM notifications
-		  WHERE id = ?`,
-		notificationID,
-	)
-	n, err := scanNotification(row)
-	if err != nil {
+	var entity db.NotificationEntity
+	if err := s.db.Where("id = ?", notificationID).Take(&entity).Error; err != nil {
 		return nil, apperrors.ErrNotFound
 	}
-	return n, nil
+	return cloneNotification(&entity), nil
 }
 
 func (s *Service) MarkReadAll(userID string) int {
-	res, err := s.db.Exec(
-		`UPDATE notifications
-		    SET is_read = 1, updated_at = UTC_TIMESTAMP(3)
-		  WHERE user_id = ? AND is_read = 0`,
-		userID,
-	)
-	if err != nil {
+	res := s.db.Model(&db.NotificationEntity{}).
+		Where("user_id = ? AND is_read = ?", userID, false).
+		Updates(map[string]any{
+			"is_read":    true,
+			"updated_at": time.Now().UTC(),
+		})
+	if res.Error != nil {
 		return 0
 	}
-	affected, _ := res.RowsAffected()
-	return int(affected)
+	return int(res.RowsAffected)
 }
 
-func scanNotification(scanner interface {
-	Scan(dest ...any) error
-}) (*model.Notification, error) {
-	notification := &model.Notification{}
-	var status string
-	var isRead bool
-	var sentAt sql.NullTime
-	if err := scanner.Scan(
-		&notification.ID,
-		&notification.UserID,
-		&notification.Channel,
-		&notification.EventType,
-		&notification.EventKey,
-		&notification.Title,
-		&notification.Content,
-		&status,
-		&isRead,
-		&sentAt,
-		&notification.CreatedAt,
-		&notification.UpdatedAt,
-	); err != nil {
-		return nil, err
+func cloneNotification(entity *db.NotificationEntity) *db.NotificationEntity {
+	if entity == nil {
+		return nil
 	}
-	notification.Status = model.NotificationStatus(status)
-	notification.Read = isRead
-	if sentAt.Valid {
-		t := sentAt.Time.UTC()
-		notification.SentAt = &t
+	copy := *entity
+	copy.CreatedAt = copy.CreatedAt.UTC()
+	copy.UpdatedAt = copy.UpdatedAt.UTC()
+	if copy.SentAt != nil {
+		t := copy.SentAt.UTC()
+		copy.SentAt = &t
 	}
-	return notification, nil
+	return &copy
 }
 
 func calcTotalPages(total int, pageSize int) int {

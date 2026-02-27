@@ -9,6 +9,8 @@ import (
 
 	"golf-store/be-mono/internal/app/bootstrap"
 	"golf-store/be-mono/internal/platform/config"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {

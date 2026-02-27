@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	notisvc "golf-store/be-mono/internal/modules/notification/service"
+	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
-	"golf-store/be-mono/internal/shared/model"
 	"golf-store/be-mono/internal/shared/response"
 )
 
@@ -28,6 +28,19 @@ func (h *Handler) RegisterUser(rg *gin.RouterGroup) {
 	rg.PATCH("/notifications/read-all", h.MarkReadAll)
 }
 
+type notificationResponseDTO struct {
+	ID        string `json:"id"`
+	Channel   string `json:"channel"`
+	EventType string `json:"event_type"`
+	EventKey  string `json:"event_key"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Status    string `json:"status"`
+	Read      bool   `json:"read"`
+	CreatedAt string `json:"created_at"`
+	SentAt    string `json:"sent_at,omitempty"`
+}
+
 func (h *Handler) ListNotifications(c *gin.Context) {
 	user := middleware.UserFromContext(c)
 	if user == nil {
@@ -42,7 +55,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		PageSize: parseIntDefault(c.Query("page_size"), 20),
 	})
 
-	items := make([]gin.H, 0, len(out.Items))
+	items := make([]notificationResponseDTO, 0, len(out.Items))
 	for _, n := range out.Items {
 		items = append(items, notificationResponse(n))
 	}
@@ -74,20 +87,23 @@ func (h *Handler) MarkReadAll(c *gin.Context) {
 	response.OK(c, gin.H{"updated_count": count})
 }
 
-func notificationResponse(n *model.Notification) gin.H {
-	resp := gin.H{
-		"id":         n.ID,
-		"channel":    n.Channel,
-		"event_type": n.EventType,
-		"event_key":  n.EventKey,
-		"title":      n.Title,
-		"content":    n.Content,
-		"status":     n.Status,
-		"read":       n.Read,
-		"created_at": n.CreatedAt.Format(time.RFC3339Nano),
+func notificationResponse(n *db.NotificationEntity) notificationResponseDTO {
+	if n == nil {
+		return notificationResponseDTO{}
+	}
+	resp := notificationResponseDTO{
+		ID:        n.ID,
+		Channel:   n.Channel,
+		EventType: n.EventType,
+		EventKey:  n.EventKey,
+		Title:     n.Title,
+		Content:   n.Content,
+		Status:    n.Status,
+		Read:      n.IsRead,
+		CreatedAt: n.CreatedAt.Format(time.RFC3339Nano),
 	}
 	if n.SentAt != nil {
-		resp["sent_at"] = n.SentAt.Format(time.RFC3339Nano)
+		resp.SentAt = n.SentAt.Format(time.RFC3339Nano)
 	}
 	return resp
 }

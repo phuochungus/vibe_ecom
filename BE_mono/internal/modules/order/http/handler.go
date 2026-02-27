@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
+	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
-	"golf-store/be-mono/internal/shared/model"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
 )
@@ -66,6 +66,34 @@ type adminUpdateStatusRequest struct {
 	Reason   string `json:"reason"`
 }
 
+type orderSummaryDTO struct {
+	ID             string `json:"id"`
+	OrderCode      string `json:"order_code"`
+	OrderStatus    string `json:"order_status"`
+	PaymentStatus  string `json:"payment_status"`
+	SubtotalAmount string `json:"subtotal_amount"`
+	DiscountAmount string `json:"discount_amount"`
+	ShippingFee    string `json:"shipping_fee"`
+	TotalAmount    string `json:"total_amount"`
+	PlacedAt       string `json:"placed_at"`
+	PaymentDueAt   string `json:"payment_due_at,omitempty"`
+}
+
+type orderItemDTO struct {
+	ProductID string `json:"product_id"`
+	SKU       string `json:"sku"`
+	Name      string `json:"name"`
+	UnitPrice string `json:"unit_price"`
+	Quantity  int    `json:"quantity"`
+	LineTotal string `json:"line_total"`
+}
+
+type orderDetailDTO struct {
+	orderSummaryDTO
+	Items    []orderItemDTO `json:"items"`
+	Payments []any          `json:"payments"`
+}
+
 func (h *Handler) CreateOrder(c *gin.Context) {
 	user := middleware.UserFromContext(c)
 	if user == nil {
@@ -93,7 +121,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		UserID:         user.ID,
 		IdempotencyKey: idempotencyKey,
 		Items:          items,
-		Shipping: model.ShippingAddress{
+		Shipping: ordersvc.ShippingAddress{
 			RecipientName:  req.ShippingAddress.RecipientName,
 			RecipientPhone: req.ShippingAddress.RecipientPhone,
 			Line1:          req.ShippingAddress.Line1,
@@ -112,7 +140,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, orderSummaryResponse(order))
+	response.Created(c, orderSummaryResponse(order.Order))
 }
 
 func (h *Handler) ListOrders(c *gin.Context) {
@@ -137,7 +165,7 @@ func (h *Handler) ListOrders(c *gin.Context) {
 		Admin:    false,
 	})
 
-	items := make([]gin.H, 0, len(out.Items))
+	items := make([]orderSummaryDTO, 0, len(out.Items))
 	for _, o := range out.Items {
 		items = append(items, orderSummaryResponse(o))
 	}
@@ -176,7 +204,7 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderSummaryResponse(order))
+	response.OK(c, orderSummaryResponse(order.Order))
 }
 
 func (h *Handler) GetTracking(c *gin.Context) {
@@ -188,11 +216,15 @@ func (h *Handler) GetTracking(c *gin.Context) {
 	}
 	items := make([]gin.H, 0, len(timeline))
 	for _, e := range timeline {
+		description := ""
+		if e.Description != nil {
+			description = *e.Description
+		}
 		items = append(items, gin.H{
 			"status":      e.ToStatus,
 			"source_type": e.SourceType,
 			"occurred_at": e.OccurredAt.Format(time.RFC3339Nano),
-			"description": e.Description,
+			"description": description,
 		})
 	}
 	response.OK(c, gin.H{
@@ -217,7 +249,7 @@ func (h *Handler) AdminListOrders(c *gin.Context) {
 		Admin:    true,
 	})
 
-	items := make([]gin.H, 0, len(out.Items))
+	items := make([]orderSummaryDTO, 0, len(out.Items))
 	for _, o := range out.Items {
 		items = append(items, orderSummaryResponse(o))
 	}
@@ -259,43 +291,50 @@ func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderSummaryResponse(order))
+	response.OK(c, orderSummaryResponse(order.Order))
 }
 
-func orderSummaryResponse(o *model.Order) gin.H {
-	result := gin.H{
-		"id":              o.ID,
-		"order_code":      o.OrderCode,
-		"order_status":    o.OrderStatus,
-		"payment_status":  o.PaymentStatus,
-		"subtotal_amount": utils.ToAmountString(o.SubtotalAmount),
-		"discount_amount": utils.ToAmountString(o.DiscountAmount),
-		"shipping_fee":    utils.ToAmountString(o.ShippingFee),
-		"total_amount":    utils.ToAmountString(o.TotalAmount),
-		"placed_at":       o.PlacedAt.Format(time.RFC3339Nano),
+func orderSummaryResponse(o *db.OrderEntity) orderSummaryDTO {
+	if o == nil {
+		return orderSummaryDTO{}
+	}
+	result := orderSummaryDTO{
+		ID:             o.ID,
+		OrderCode:      o.OrderCode,
+		OrderStatus:    o.OrderStatus,
+		PaymentStatus:  o.PaymentStatus,
+		SubtotalAmount: utils.ToAmountString(o.SubtotalAmount),
+		DiscountAmount: utils.ToAmountString(o.DiscountAmount),
+		ShippingFee:    utils.ToAmountString(o.ShippingFee),
+		TotalAmount:    utils.ToAmountString(o.TotalAmount),
+		PlacedAt:       o.PlacedAt.Format(time.RFC3339Nano),
 	}
 	if o.PaymentDueAt != nil {
-		result["payment_due_at"] = o.PaymentDueAt.Format(time.RFC3339Nano)
+		result.PaymentDueAt = o.PaymentDueAt.Format(time.RFC3339Nano)
 	}
 	return result
 }
 
-func orderDetailResponse(o *model.Order) gin.H {
-	items := make([]gin.H, 0, len(o.Items))
+func orderDetailResponse(o *ordersvc.OrderWithItems) orderDetailDTO {
+	if o == nil || o.Order == nil {
+		return orderDetailDTO{}
+	}
+	items := make([]orderItemDTO, 0, len(o.Items))
 	for _, item := range o.Items {
-		items = append(items, gin.H{
-			"product_id": item.ProductID,
-			"sku":        item.SKU,
-			"name":       item.Name,
-			"unit_price": utils.ToAmountString(item.UnitPrice),
-			"quantity":   item.Quantity,
-			"line_total": utils.ToAmountString(item.LineTotal),
+		items = append(items, orderItemDTO{
+			ProductID: item.ProductID,
+			SKU:       item.SKU,
+			Name:      item.Name,
+			UnitPrice: utils.ToAmountString(item.UnitPrice),
+			Quantity:  item.Quantity,
+			LineTotal: utils.ToAmountString(item.LineTotal),
 		})
 	}
-	resp := orderSummaryResponse(o)
-	resp["items"] = items
-	resp["payments"] = []any{}
-	return resp
+	return orderDetailDTO{
+		orderSummaryDTO: orderSummaryResponse(o.Order),
+		Items:           items,
+		Payments:        []any{},
+	}
 }
 
 func parseOptionalTime(value string) (*time.Time, error) {

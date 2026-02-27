@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	authsvc "golf-store/be-mono/internal/modules/auth/service"
+	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
-	"golf-store/be-mono/internal/shared/model"
 	"golf-store/be-mono/internal/shared/response"
 )
 
@@ -27,6 +27,30 @@ type loginRequest struct {
 
 type refreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
+}
+
+type userDTO struct {
+	ID       string `json:"id"`
+	Role     string `json:"role"`
+	FullName string `json:"full_name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Status   string `json:"status"`
+}
+
+type loginResponseDTO struct {
+	AccessToken  string  `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
+	TokenType    string  `json:"token_type"`
+	ExpiresIn    int     `json:"expires_in"`
+	User         userDTO `json:"user"`
+}
+
+type refreshResponseDTO struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
 }
 
 func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
@@ -52,12 +76,12 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{
-		"access_token":  result.AccessToken,
-		"refresh_token": result.RefreshToken,
-		"token_type":    result.TokenType,
-		"expires_in":    result.ExpiresIn,
-		"user":          userResponse(result.User),
+	response.OK(c, loginResponseDTO{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		TokenType:    result.TokenType,
+		ExpiresIn:    result.ExpiresIn,
+		User:         userResponse(result.User),
 	})
 }
 
@@ -74,11 +98,11 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, gin.H{
-		"access_token":  result.AccessToken,
-		"refresh_token": result.RefreshToken,
-		"token_type":    result.TokenType,
-		"expires_in":    result.ExpiresIn,
+	response.OK(c, refreshResponseDTO{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		TokenType:    result.TokenType,
+		ExpiresIn:    result.ExpiresIn,
 	})
 }
 
@@ -106,13 +130,16 @@ func (h *Handler) Me(c *gin.Context) {
 	response.OK(c, userResponse(freshUser))
 }
 
-func userResponse(u *model.User) gin.H {
-	return gin.H{
-		"id":        u.ID,
-		"role":      u.Role,
-		"full_name": u.FullName,
-		"email":     u.Email,
-		"phone":     u.Phone,
-		"status":    u.Status,
+func userResponse(u *db.UserEntity) userDTO {
+	if u == nil {
+		return userDTO{}
+	}
+	return userDTO{
+		ID:       u.ID,
+		Role:     u.Role,
+		FullName: u.FullName,
+		Email:    u.Email,
+		Phone:    u.Phone,
+		Status:   u.Status,
 	}
 }

@@ -206,9 +206,7 @@ export default function ProductFormPage() {
                   <Input
                     id="price"
                     type="number"
-                    placeholder="1590000"
-                    min="1"
-                    step="1000"
+                      placeholder="1590000"
                     {...register('price', {
                       required: 'Giá bán là bắt buộc',
                       min: { value: 1, message: 'Giá phải lớn hơn 0 (BR-PROD-01)' },

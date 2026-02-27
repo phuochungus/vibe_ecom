@@ -2,11 +2,11 @@ package bootstrap
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"golf-store/be-mono/internal/app/server"
 	authhttp "golf-store/be-mono/internal/modules/auth/http"
@@ -28,7 +28,7 @@ import (
 
 type App struct {
 	cfg    config.Config
-	db     *sql.DB
+	db     *gorm.DB
 	router *gin.Engine
 }
 
@@ -38,9 +38,11 @@ func New(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 	if err := db.InitSchema(database); err != nil {
+		closeGorm(database)
 		return nil, fmt.Errorf("init schema: %w", err)
 	}
 	if err := db.SeedDemoData(database); err != nil {
+		closeGorm(database)
 		return nil, fmt.Errorf("seed demo data: %w", err)
 	}
 
@@ -81,7 +83,16 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func (a *App) close() {
-	if a.db != nil {
-		_ = a.db.Close()
+	closeGorm(a.db)
+}
+
+func closeGorm(gdb *gorm.DB) {
+	if gdb == nil {
+		return
 	}
+	sqlDB, err := gdb.DB()
+	if err != nil {
+		return
+	}
+	_ = sqlDB.Close()
 }

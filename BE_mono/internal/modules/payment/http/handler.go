@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	paysvc "golf-store/be-mono/internal/modules/payment/service"
+	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
@@ -34,6 +35,23 @@ type createPaymentRequest struct {
 	Provider  string `json:"provider"`
 	ReturnURL string `json:"return_url"`
 	CancelURL string `json:"cancel_url"`
+}
+
+type createPaymentResponseDTO struct {
+	PaymentID   string `json:"payment_id"`
+	Status      string `json:"status"`
+	CheckoutURL string `json:"checkout_url"`
+}
+
+type paymentItemDTO struct {
+	ID              string `json:"id"`
+	TxnType         string `json:"txn_type"`
+	Provider        string `json:"provider"`
+	ProviderTxnCode string `json:"provider_txn_code,omitempty"`
+	Status          string `json:"status"`
+	Amount          string `json:"amount"`
+	CurrencyCode    string `json:"currency_code"`
+	CreatedAt       string `json:"created_at"`
 }
 
 func (h *Handler) CreatePayment(c *gin.Context) {
@@ -67,10 +85,10 @@ func (h *Handler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, gin.H{
-		"payment_id":   output.PaymentID,
-		"status":       output.Status,
-		"checkout_url": output.CheckoutURL,
+	response.Created(c, createPaymentResponseDTO{
+		PaymentID:   output.PaymentID,
+		Status:      output.Status,
+		CheckoutURL: output.CheckoutURL,
 	})
 }
 
@@ -87,18 +105,9 @@ func (h *Handler) ListPayments(c *gin.Context) {
 		return
 	}
 
-	items := make([]gin.H, 0, len(list))
+	items := make([]paymentItemDTO, 0, len(list))
 	for _, p := range list {
-		items = append(items, gin.H{
-			"id":                p.ID,
-			"txn_type":          p.TxnType,
-			"provider":          p.Provider,
-			"provider_txn_code": p.ProviderTxnCode,
-			"status":            p.Status,
-			"amount":            utils.ToAmountString(p.Amount),
-			"currency_code":     p.CurrencyCode,
-			"created_at":        p.CreatedAt.Format(time.RFC3339Nano),
-		})
+		items = append(items, paymentResponse(p))
 	}
 
 	response.OK(c, gin.H{"items": items})
@@ -119,4 +128,23 @@ func (h *Handler) ReceivePaymentWebhook(c *gin.Context) {
 	}
 
 	response.Accepted(c, result)
+}
+
+func paymentResponse(p *db.PaymentTransactionEntity) paymentItemDTO {
+	if p == nil {
+		return paymentItemDTO{}
+	}
+	resp := paymentItemDTO{
+		ID:           p.ID,
+		TxnType:      p.TxnType,
+		Provider:     p.Provider,
+		Status:       p.Status,
+		Amount:       utils.ToAmountString(p.Amount),
+		CurrencyCode: p.CurrencyCode,
+		CreatedAt:    p.CreatedAt.Format(time.RFC3339Nano),
+	}
+	if p.ProviderTxnCode != nil {
+		resp.ProviderTxnCode = *p.ProviderTxnCode
+	}
+	return resp
 }

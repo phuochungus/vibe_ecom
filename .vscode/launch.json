@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug BE_mono",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/BE_mono/cmd/api",
+      "cwd": "${workspaceFolder}/BE_mono",
+      "envFile": "${workspaceFolder}/BE_mono/.env"
+    }
+  ]
+}

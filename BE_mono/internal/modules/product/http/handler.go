@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	prodsvc "golf-store/be-mono/internal/modules/product/service"
-	"golf-store/be-mono/internal/shared/model"
+	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
 )
@@ -19,6 +19,17 @@ type Handler struct {
 
 func New(products *prodsvc.Service) *Handler {
 	return &Handler{products: products}
+}
+
+type productResponseDTO struct {
+	ID          string `json:"id"`
+	SKU         string `json:"sku"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Price       string `json:"price"`
+	Stock       int    `json:"stock"`
+	Status      string `json:"status"`
+	ImageURL    string `json:"image_url"`
 }
 
 func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
@@ -33,8 +44,8 @@ func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 }
 
 func (h *Handler) ListProducts(c *gin.Context) {
-	minCents, _ := parseMoneyToCentsPtr(c.Query("min_price"))
-	maxCents, _ := parseMoneyToCentsPtr(c.Query("max_price"))
+	min, _ := parseMoneyToIntPtr(c.Query("min_price"))
+	max, _ := parseMoneyToIntPtr(c.Query("max_price"))
 
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
@@ -42,8 +53,8 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	out := h.products.List(prodsvc.ListInput{
 		Query:     c.Query("q"),
 		Status:    c.Query("status"),
-		MinCents:  minCents,
-		MaxCents:  maxCents,
+		Min:       min,
+		Max:       max,
 		Page:      page,
 		PageSize:  pageSize,
 		SortBy:    c.Query("sort"),
@@ -51,7 +62,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		AdminView: false,
 	})
 
-	items := make([]gin.H, 0, len(out.Items))
+	items := make([]productResponseDTO, 0, len(out.Items))
 	for _, p := range out.Items {
 		items = append(items, productResponse(p))
 	}
@@ -94,7 +105,7 @@ func (h *Handler) AdminCreateProduct(c *gin.Context) {
 		return
 	}
 
-	priceCents, err := parseMoneyToCents(req.Price)
+	priceCents, err := parseMoneyToInt(req.Price)
 	if err != nil || priceCents <= 0 {
 		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "price must be greater than 0", nil)
 		return
@@ -113,7 +124,7 @@ func (h *Handler) AdminCreateProduct(c *gin.Context) {
 		SKU:         req.SKU,
 		Name:        req.Name,
 		Description: req.Description,
-		PriceCents:  priceCents,
+		Price:       priceCents,
 		Stock:       *req.Stock,
 		Status:      status,
 		ImageURL:    req.ImageURL,
@@ -135,7 +146,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 
 	var priceCents int64
 	if strings.TrimSpace(req.Price) != "" {
-		parsed, err := parseMoneyToCents(req.Price)
+		parsed, err := parseMoneyToInt(req.Price)
 		if err != nil || parsed <= 0 {
 			response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "price must be greater than 0", nil)
 			return
@@ -143,7 +154,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 		priceCents = parsed
 	}
 
-	status := model.ProductStatus("")
+	status := ""
 	if strings.TrimSpace(req.Status) != "" {
 		parsedStatus, err := prodsvc.ParseStatus(req.Status)
 		if err != nil {
@@ -161,7 +172,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 		SKU:         req.SKU,
 		Name:        req.Name,
 		Description: req.Description,
-		PriceCents:  priceCents,
+		Price:       priceCents,
 		Stock:       stock,
 		Status:      status,
 		ImageURL:    req.ImageURL,
@@ -183,20 +194,23 @@ func (h *Handler) AdminDeleteProduct(c *gin.Context) {
 	response.NoContent(c)
 }
 
-func productResponse(p *model.Product) gin.H {
-	return gin.H{
-		"id":          p.ID,
-		"sku":         p.SKU,
-		"name":        p.Name,
-		"description": p.Description,
-		"price":       utils.ToAmountString(p.PriceCents),
-		"stock":       p.Stock,
-		"status":      p.Status,
-		"image_url":   p.ImageURL,
+func productResponse(p *db.ProductEntity) productResponseDTO {
+	if p == nil {
+		return productResponseDTO{}
+	}
+	return productResponseDTO{
+		ID:          p.ID,
+		SKU:         p.SKU,
+		Name:        p.Name,
+		Description: p.Description,
+		Price:       utils.ToAmountString(p.Price),
+		Stock:       p.Stock,
+		Status:      p.Status,
+		ImageURL:    p.ImageURL,
 	}
 }
 
-func parseMoneyToCents(value string) (int64, error) {
+func parseMoneyToInt(value string) (int64, error) {
 	f, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
 	if err != nil {
 		return 0, err
@@ -204,11 +218,11 @@ func parseMoneyToCents(value string) (int64, error) {
 	return int64(f * 100), nil
 }
 
-func parseMoneyToCentsPtr(value string) (*int64, error) {
+func parseMoneyToIntPtr(value string) (*int64, error) {
 	if strings.TrimSpace(value) == "" {
 		return nil, nil
 	}
-	v, err := parseMoneyToCents(value)
+	v, err := parseMoneyToInt(value)
 	if err != nil {
 		return nil, err
 	}
