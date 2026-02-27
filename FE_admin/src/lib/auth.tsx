@@ -24,9 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(getUserFromStorage)
 
   const login = useCallback(async (identifier: string, password: string) => {
+    // Backend always returns envelope: { success, data: LoginResponse, meta, ... }
     const res = await api.post<{ success: boolean; data: LoginResponse }>('/auth/login', { identifier, password })
-    // Backend returns envelope: { success, data: { access_token, refresh_token, user, ... } }
-    const payload = res.data.data ?? (res.data as unknown as LoginResponse)
+    const payload = res.data.data
     localStorage.setItem('access_token', payload.access_token)
     localStorage.setItem('refresh_token', payload.refresh_token)
     localStorage.setItem('auth_user', JSON.stringify(payload.user))
