@@ -1,5 +1,0 @@
-bin/
-tmp/
-*.log
-.env
-coverage.out
