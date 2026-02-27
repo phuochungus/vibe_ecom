@@ -17,6 +17,8 @@ export JWT_SECRET='replace_with_strong_secret'
 export JWT_ISSUER='be-mono'
 export JWT_ACCESS_TTL_MINUTES='15'
 export JWT_REFRESH_TTL_MINUTES='10080'
+# optional: override OpenAPI file path (default: docs/FE/openapi.yaml or ../docs/FE/openapi.yaml)
+export OPENAPI_SPEC_PATH='/Users/imacvip/golf_store/docs/FE/openapi.yaml'
 ```
 
 ## Run
@@ -24,6 +26,12 @@ export JWT_REFRESH_TTL_MINUTES='10080'
 ```bash
 cd BE_mono
 go run ./cmd/api
+```
+
+Open docs:
+
+```bash
+open http://localhost:8080/docs
 ```
 
 ## Test

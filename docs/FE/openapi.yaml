@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API contract for FE integration via single API Gateway.
 servers:
-  - url: /api/v1
+  - url: http://localhost:8080/api/v1
     description: API Gateway v1
 security:
   - bearerAuth: []
