@@ -48,10 +48,10 @@ func New(dbConn *gorm.DB, cfg JWTConfig) *Service {
 		panic("JWT issuer is not configured")
 	}
 	if cfg.AccessTTL <= 0 {
-		cfg.AccessTTL = 15 * time.Minute
+		panic("JWT access TTL must be positive")
 	}
 	if cfg.RefreshTTL <= 0 {
-		cfg.RefreshTTL = 7 * 24 * time.Hour
+		panic("JWT refresh TTL must be positive")
 	}
 
 	return &Service{
