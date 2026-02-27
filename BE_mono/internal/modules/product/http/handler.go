@@ -44,8 +44,20 @@ func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 }
 
 func (h *Handler) ListProducts(c *gin.Context) {
-	min, _ := parseMoneyToIntPtr(c.Query("min_price"))
-	max, _ := parseMoneyToIntPtr(c.Query("max_price"))
+	//nullable int64
+	var min, max *int64
+	if c.Query("min_price") != "" {
+		val, err := strconv.ParseInt(c.Query("min_price"), 10, 64)
+		if err == nil {
+			min = &val
+		}
+	}
+	if c.Query("max_price") != "" {
+		val, err := strconv.ParseInt(c.Query("max_price"), 10, 64)
+		if err == nil {
+			max = &val
+		}
+	}
 
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
@@ -105,7 +117,7 @@ func (h *Handler) AdminCreateProduct(c *gin.Context) {
 		return
 	}
 
-	priceCents, err := parseMoneyToInt(req.Price)
+	priceCents, err := strconv.ParseInt(req.Price, 10, 64)
 	if err != nil || priceCents <= 0 {
 		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "price must be greater than 0", nil)
 		return
@@ -146,7 +158,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 
 	var priceCents int64
 	if strings.TrimSpace(req.Price) != "" {
-		parsed, err := parseMoneyToInt(req.Price)
+		parsed, err := strconv.ParseInt(req.Price, 10, 64)
 		if err != nil || parsed <= 0 {
 			response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "price must be greater than 0", nil)
 			return
@@ -208,25 +220,6 @@ func productResponse(p *db.ProductEntity) productResponseDTO {
 		Status:      p.Status,
 		ImageURL:    p.ImageURL,
 	}
-}
-
-func parseMoneyToInt(value string) (int64, error) {
-	f, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
-	if err != nil {
-		return 0, err
-	}
-	return int64(f * 100), nil
-}
-
-func parseMoneyToIntPtr(value string) (*int64, error) {
-	if strings.TrimSpace(value) == "" {
-		return nil, nil
-	}
-	v, err := parseMoneyToInt(value)
-	if err != nil {
-		return nil, err
-	}
-	return &v, nil
 }
 
 func parseIntDefault(value string, fallback int) int {

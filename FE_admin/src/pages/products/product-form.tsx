@@ -97,7 +97,7 @@ export default function ProductFormPage() {
       sku: data.sku,
       name: data.name,
       description: data.description || undefined,
-      price: parseFloat(data.price).toFixed(2),
+      price: parseInt(data.price).toString(),
       stock: data.stock,
       status: data.status,
       image_url: data.image_url || undefined,
