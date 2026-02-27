@@ -41,11 +41,11 @@ type Service struct {
 func New(dbConn *gorm.DB, cfg JWTConfig) *Service {
 	secret := strings.TrimSpace(cfg.Secret)
 	if secret == "" {
-		secret = "dev_jwt_secret_change_me"
+		panic("JWT secret is not configured")
 	}
 	issuer := strings.TrimSpace(cfg.Issuer)
 	if issuer == "" {
-		issuer = "be-mono"
+		panic("JWT issuer is not configured")
 	}
 	if cfg.AccessTTL <= 0 {
 		cfg.AccessTTL = 15 * time.Minute
