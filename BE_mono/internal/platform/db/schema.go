@@ -19,12 +19,16 @@ func InitSchema(gdb *gorm.DB) error {
 	return gdb.AutoMigrate(
 		&UserEntity{},
 		&AuthTokenEntity{},
+		&UserAddressEntity{},
 		&ProductEntity{},
 		&OrderEntity{},
 		&OrderItemEntity{},
+		&OrderStatusHistoryEntity{},
 		&OrderTrackingEventEntity{},
+		&ShipmentTrackingEventEntity{},
 		&PaymentTransactionEntity{},
 		&NotificationEntity{},
+		&AuditLogEntity{},
 	)
 }
 
