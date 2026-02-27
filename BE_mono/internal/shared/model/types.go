@@ -74,7 +74,7 @@ type User struct {
 	ID                  string
 	Email               string
 	Phone               string
-	Password            string
+	PasswordHash        string
 	FullName            string
 	Role                UserRole
 	Status              UserStatus

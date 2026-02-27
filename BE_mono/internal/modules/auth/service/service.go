@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	apperrors "golf-store/be-mono/internal/shared/errors"
 	"golf-store/be-mono/internal/shared/model"
@@ -43,7 +44,8 @@ func (s *Service) Login(identifier string, password string) (*LoginResult, *appe
 		return nil, &apperrors.APIError{Status: http.StatusLocked, Code: "ACCOUNT_LOCKED", Message: "Account is temporarily locked"}
 	}
 
-	if user.Password != password {
+	ok := s.verifyPassword(user, password)
+	if !ok {
 		attempts := user.FailedLoginAttempts + 1
 		var lockedUntil any = nil
 		if attempts >= 5 {
@@ -190,6 +192,19 @@ func (s *Service) Profile(userID string) (*model.User, bool) {
 	return user, true
 }
 
+func (s *Service) verifyPassword(user *model.User, plain string) bool {
+	if user == nil {
+		return false
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(plain))
+	if err == nil {
+		return true
+	}
+
+	return false
+}
+
 func (s *Service) findUserByIdentifier(identifier string) (*model.User, error) {
 	row := s.db.QueryRow(
 		`SELECT id, email, phone, password, full_name, role, status,
@@ -228,7 +243,7 @@ func scanUser(scanner interface {
 		&user.ID,
 		&user.Email,
 		&user.Phone,
-		&user.Password,
+		&user.PasswordHash,
 		&user.FullName,
 		&role,
 		&status,

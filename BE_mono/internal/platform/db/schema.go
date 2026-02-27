@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func InitSchema(db *sql.DB) error {
@@ -152,12 +153,20 @@ func SeedDemoData(db *sql.DB) error {
 		return fmt.Errorf("count users: %w", err)
 	}
 	if userCount == 0 {
+		adminPasswordHash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("hash admin password: %w", err)
+		}
+		userPasswordHash, err := bcrypt.GenerateFromPassword([]byte("user123"), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("hash user password: %w", err)
+		}
 		if _, err := db.Exec(
 			`INSERT INTO users (id, email, phone, password, full_name, role, status, created_at, updated_at)
 			 VALUES (?, ?, ?, ?, ?, 'ADMIN', 'ACTIVE', ?, ?),
 			        (?, ?, ?, ?, ?, 'USER', 'ACTIVE', ?, ?)`,
-			uuid.NewString(), "admin@golf.local", "0900000001", "admin123", "System Admin", now, now,
-			uuid.NewString(), "user@golf.local", "0900000002", "user123", "Demo User", now, now,
+			uuid.NewString(), "admin@golf.local", "0900000001", string(adminPasswordHash), "System Admin", now, now,
+			uuid.NewString(), "user@golf.local", "0900000002", string(userPasswordHash), "Demo User", now, now,
 		); err != nil {
 			return fmt.Errorf("seed users: %w", err)
 		}
