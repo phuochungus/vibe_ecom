@@ -13,6 +13,10 @@ Set env (or copy from `.env.example`):
 
 ```bash
 export MYSQL_DSN='golf:golf@tcp(127.0.0.1:3307)/golf_store_mono?parseTime=true&charset=utf8mb4&loc=UTC'
+export JWT_SECRET='replace_with_strong_secret'
+export JWT_ISSUER='be-mono'
+export JWT_ACCESS_TTL_MINUTES='15'
+export JWT_REFRESH_TTL_MINUTES='10080'
 ```
 
 ## Run

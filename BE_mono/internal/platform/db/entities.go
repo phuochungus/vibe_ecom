@@ -22,8 +22,8 @@ func (UserEntity) TableName() string {
 }
 
 type AuthTokenEntity struct {
-	AccessToken  string    `gorm:"column:access_token;type:varchar(64);primaryKey"`
-	RefreshToken string    `gorm:"column:refresh_token;type:varchar(64);uniqueIndex;not null"`
+	AccessToken  string    `gorm:"column:access_token;type:varchar(512);primaryKey"`
+	RefreshToken string    `gorm:"column:refresh_token;type:varchar(512);uniqueIndex;not null"`
 	UserID       string    `gorm:"column:user_id;type:varchar(36);index;not null"`
 	ExpiresAt    time.Time `gorm:"column:expires_at;not null"`
 	CreatedAt    time.Time `gorm:"column:created_at;not null"`

@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS auth_tokens (
-  access_token VARCHAR(64) PRIMARY KEY,
-  refresh_token VARCHAR(64) NOT NULL UNIQUE,
+  access_token VARCHAR(512) PRIMARY KEY,
+  refresh_token VARCHAR(512) NOT NULL UNIQUE,
   user_id VARCHAR(36) NOT NULL,
   expires_at DATETIME(3) NOT NULL,
   created_at DATETIME(3) NOT NULL,

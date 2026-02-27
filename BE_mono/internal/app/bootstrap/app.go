@@ -47,7 +47,12 @@ func New(cfg config.Config) (*App, error) {
 	}
 
 	health := server.NewHealthHandler(cfg.ServiceName, database)
-	authService := authsvc.New(database)
+	authService := authsvc.New(database, authsvc.JWTConfig{
+		Secret:     cfg.JWTSecret,
+		Issuer:     cfg.JWTIssuer,
+		AccessTTL:  time.Duration(cfg.JWTAccessTTLMinutes) * time.Minute,
+		RefreshTTL: time.Duration(cfg.JWTRefreshTTLMinutes) * time.Minute,
+	})
 	productService := productsvc.New(database)
 	orderService := ordersvc.New(database)
 	paymentService := paymentsvc.New(database, orderService)
