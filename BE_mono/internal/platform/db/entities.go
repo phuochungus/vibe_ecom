@@ -1,6 +1,8 @@
 package db
 
-import "time"
+import (
+	"time"
+)
 
 type UserEntity struct {
 	ID                  string     `gorm:"column:id;type:varchar(36);primaryKey"`
@@ -52,33 +54,34 @@ func (ProductEntity) TableName() string {
 }
 
 type OrderEntity struct {
-	ID                    string     `gorm:"column:id;type:varchar(36);primaryKey"`
-	OrderCode             string     `gorm:"column:order_code;type:varchar(32);uniqueIndex;not null"`
-	IdempotencyKey        string     `gorm:"column:idempotency_key;type:varchar(128);not null;index:uk_orders_user_idempotency,unique"`
-	UserID                string     `gorm:"column:user_id;type:varchar(36);not null;index:uk_orders_user_idempotency,unique"`
-	OrderStatus           string     `gorm:"column:order_status;type:enum('NEW','PENDING_PAYMENT','PAID','PROCESSING','SHIPPING','COMPLETED','CANCELLED');not null"`
-	PaymentStatus         string     `gorm:"column:payment_status;type:enum('UNPAID','PAID','FAILED','REFUNDED');not null"`
-	CurrencyCode          string     `gorm:"column:currency_code;type:char(3);not null"`
-	SubtotalAmount        int64      `gorm:"column:subtotal_amount;not null"`
-	DiscountAmount        int64      `gorm:"column:discount_amount;not null"`
-	ShippingFee           int64      `gorm:"column:shipping_fee;not null"`
-	TotalAmount           int64      `gorm:"column:total_amount;not null"`
-	PaymentDueAt          *time.Time `gorm:"column:payment_due_at"`
-	CustomerNote          *string    `gorm:"column:customer_note;type:varchar(500)"`
-	CancelReason          *string    `gorm:"column:cancel_reason;type:varchar(255)"`
-	ShippingRecipientName string     `gorm:"column:shipping_recipient_name;type:varchar(150);not null"`
-	ShippingPhone         string     `gorm:"column:shipping_phone;type:varchar(20);not null"`
-	ShippingLine1         string     `gorm:"column:shipping_line1;type:varchar(255);not null"`
-	ShippingLine2         *string    `gorm:"column:shipping_line2;type:varchar(255)"`
-	ShippingWard          *string    `gorm:"column:shipping_ward;type:varchar(120)"`
-	ShippingDistrict      *string    `gorm:"column:shipping_district;type:varchar(120)"`
-	ShippingCity          string     `gorm:"column:shipping_city;type:varchar(120);not null"`
-	ShippingProvince      *string    `gorm:"column:shipping_province;type:varchar(120)"`
-	ShippingPostalCode    *string    `gorm:"column:shipping_postal_code;type:varchar(20)"`
-	ShippingCountryCode   string     `gorm:"column:shipping_country_code;type:char(2);not null"`
-	PlacedAt              time.Time  `gorm:"column:placed_at;not null"`
-	CreatedAt             time.Time  `gorm:"column:created_at;not null"`
-	UpdatedAt             time.Time  `gorm:"column:updated_at;not null"`
+	ID                    string            `gorm:"column:id;type:varchar(36);primaryKey"`
+	OrderCode             string            `gorm:"column:order_code;type:varchar(32);uniqueIndex;not null"`
+	IdempotencyKey        string            `gorm:"column:idempotency_key;type:varchar(128);not null;index:uk_orders_user_idempotency,unique"`
+	UserID                string            `gorm:"column:user_id;type:varchar(36);not null;index:uk_orders_user_idempotency,unique"`
+	OrderStatus           string            `gorm:"column:order_status;type:enum('NEW','PENDING_PAYMENT','PAID','PROCESSING','SHIPPING','COMPLETED','CANCELLED');not null"`
+	PaymentStatus         string            `gorm:"column:payment_status;type:enum('UNPAID','PAID','FAILED','REFUNDED');not null"`
+	CurrencyCode          string            `gorm:"column:currency_code;type:char(3);not null"`
+	SubtotalAmount        int64             `gorm:"column:subtotal_amount;not null"`
+	DiscountAmount        int64             `gorm:"column:discount_amount;not null"`
+	ShippingFee           int64             `gorm:"column:shipping_fee;not null"`
+	TotalAmount           int64             `gorm:"column:total_amount;not null"`
+	PaymentDueAt          *time.Time        `gorm:"column:payment_due_at"`
+	CustomerNote          *string           `gorm:"column:customer_note;type:varchar(500)"`
+	CancelReason          *string           `gorm:"column:cancel_reason;type:varchar(255)"`
+	ShippingRecipientName string            `gorm:"column:shipping_recipient_name;type:varchar(150);not null"`
+	ShippingPhone         string            `gorm:"column:shipping_phone;type:varchar(20);not null"`
+	ShippingLine1         string            `gorm:"column:shipping_line1;type:varchar(255);not null"`
+	ShippingLine2         *string           `gorm:"column:shipping_line2;type:varchar(255)"`
+	ShippingWard          *string           `gorm:"column:shipping_ward;type:varchar(120)"`
+	ShippingDistrict      *string           `gorm:"column:shipping_district;type:varchar(120)"`
+	ShippingCity          string            `gorm:"column:shipping_city;type:varchar(120);not null"`
+	ShippingProvince      *string           `gorm:"column:shipping_province;type:varchar(120)"`
+	ShippingPostalCode    *string           `gorm:"column:shipping_postal_code;type:varchar(20)"`
+	ShippingCountryCode   string            `gorm:"column:shipping_country_code;type:char(2);not null"`
+	PlacedAt              time.Time         `gorm:"column:placed_at;not null"`
+	CreatedAt             time.Time         `gorm:"column:created_at;not null"`
+	UpdatedAt             time.Time         `gorm:"column:updated_at;not null"`
+	Items                 []OrderItemEntity `gorm:"foreignKey:OrderID;references:ID"`
 }
 
 func (OrderEntity) TableName() string {
@@ -86,16 +89,17 @@ func (OrderEntity) TableName() string {
 }
 
 type OrderItemEntity struct {
-	ID        string    `gorm:"column:id;type:varchar(36);primaryKey"`
-	OrderID   string    `gorm:"column:order_id;type:varchar(36);not null;index:uk_order_item,unique"`
-	ProductID string    `gorm:"column:product_id;type:varchar(36);not null;index:uk_order_item,unique"`
-	SKU       string    `gorm:"column:sku;type:varchar(64);not null"`
-	Name      string    `gorm:"column:name;type:varchar(255);not null"`
-	UnitPrice int64     `gorm:"column:unit_price;not null"`
-	Quantity  int       `gorm:"column:quantity;not null"`
-	LineTotal int64     `gorm:"column:line_total;not null"`
-	CreatedAt time.Time `gorm:"column:created_at;not null"`
-	UpdatedAt time.Time `gorm:"column:updated_at;not null"`
+	ID        string       `gorm:"column:id;type:varchar(36);primaryKey"`
+	OrderID   string       `gorm:"column:order_id;type:varchar(36);not null;index:uk_order_item,unique"`
+	ProductID string       `gorm:"column:product_id;type:varchar(36);not null;index:uk_order_item,unique"`
+	SKU       string       `gorm:"column:sku;type:varchar(64);not null"`
+	Name      string       `gorm:"column:name;type:varchar(255);not null"`
+	UnitPrice int64        `gorm:"column:unit_price;not null"`
+	Quantity  int          `gorm:"column:quantity;not null"`
+	LineTotal int64        `gorm:"column:line_total;not null"`
+	CreatedAt time.Time    `gorm:"column:created_at;not null"`
+	UpdatedAt time.Time    `gorm:"column:updated_at;not null"`
+	Order     *OrderEntity `gorm:"foreignKey:OrderID;references:ID"`
 }
 
 func (OrderItemEntity) TableName() string {

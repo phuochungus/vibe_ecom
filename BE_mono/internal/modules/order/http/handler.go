@@ -140,7 +140,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, orderSummaryResponse(order.Order))
+	response.Created(c, orderSummaryResponse(order))
 }
 
 func (h *Handler) ListOrders(c *gin.Context) {
@@ -204,7 +204,7 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderSummaryResponse(order.Order))
+	response.OK(c, orderSummaryResponse(order))
 }
 
 func (h *Handler) GetTracking(c *gin.Context) {
@@ -291,7 +291,7 @@ func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderSummaryResponse(order.Order))
+	response.OK(c, orderSummaryResponse(order))
 }
 
 func orderSummaryResponse(o *db.OrderEntity) orderSummaryDTO {
@@ -315,8 +315,8 @@ func orderSummaryResponse(o *db.OrderEntity) orderSummaryDTO {
 	return result
 }
 
-func orderDetailResponse(o *ordersvc.OrderWithItems) orderDetailDTO {
-	if o == nil || o.Order == nil {
+func orderDetailResponse(o *db.OrderEntity) orderDetailDTO {
+	if o == nil || o.Items == nil {
 		return orderDetailDTO{}
 	}
 	items := make([]orderItemDTO, 0, len(o.Items))
@@ -331,7 +331,7 @@ func orderDetailResponse(o *ordersvc.OrderWithItems) orderDetailDTO {
 		})
 	}
 	return orderDetailDTO{
-		orderSummaryDTO: orderSummaryResponse(o.Order),
+		orderSummaryDTO: orderSummaryResponse(o),
 		Items:           items,
 		Payments:        []any{},
 	}

@@ -67,12 +67,7 @@ type ListOutput struct {
 	TotalPages int
 }
 
-type OrderWithItems struct {
-	Order *db.OrderEntity
-	Items []db.OrderItemEntity
-}
-
-func (s *Service) Create(input CreateOrderInput) (*OrderWithItems, *apperrors.APIError) {
+func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.APIError) {
 	idemKey := strings.TrimSpace(input.IdempotencyKey)
 	if idemKey == "" {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "Idempotency-Key is required"}
@@ -269,7 +264,7 @@ func (s *Service) List(input ListInput) ListOutput {
 	}
 }
 
-func (s *Service) GetByIDForUser(orderID string, userID string) (*OrderWithItems, *apperrors.APIError) {
+func (s *Service) GetByIDForUser(orderID string, userID string) (*db.OrderEntity, *apperrors.APIError) {
 	order, err := s.getOrder(orderID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, apperrors.ErrNotFound
@@ -277,13 +272,13 @@ func (s *Service) GetByIDForUser(orderID string, userID string) (*OrderWithItems
 	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query order"}
 	}
-	if order.Order.UserID != userID {
+	if order.UserID != userID {
 		return nil, apperrors.ErrNotFound
 	}
 	return order, nil
 }
 
-func (s *Service) GetByIDAdmin(orderID string) (*OrderWithItems, *apperrors.APIError) {
+func (s *Service) GetByIDAdmin(orderID string) (*db.OrderEntity, *apperrors.APIError) {
 	order, err := s.getOrder(orderID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, apperrors.ErrNotFound
@@ -294,7 +289,7 @@ func (s *Service) GetByIDAdmin(orderID string) (*OrderWithItems, *apperrors.APIE
 	return order, nil
 }
 
-func (s *Service) CancelByUser(orderID string, userID string, reason string) (*OrderWithItems, *apperrors.APIError) {
+func (s *Service) CancelByUser(orderID string, userID string, reason string) (*db.OrderEntity, *apperrors.APIError) {
 	now := time.Now().UTC()
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
@@ -392,7 +387,7 @@ func (s *Service) TrackingForAdmin(orderID string) ([]db.OrderTrackingEventEntit
 	return events, orderEntity.OrderStatus, nil
 }
 
-func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason string) (*OrderWithItems, *apperrors.APIError) {
+func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason string) (*db.OrderEntity, *apperrors.APIError) {
 	if toStatus == "" {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "to_status is required"}
 	}
@@ -444,7 +439,7 @@ func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason stri
 	return s.GetByIDAdmin(orderID)
 }
 
-func (s *Service) MarkPaymentResult(orderID string, success bool, reason string) (*OrderWithItems, *apperrors.APIError) {
+func (s *Service) MarkPaymentResult(orderID string, success bool, reason string) (*db.OrderEntity, *apperrors.APIError) {
 	now := time.Now().UTC()
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		var orderEntity db.OrderEntity
@@ -524,26 +519,15 @@ func (s *Service) loadTracking(orderID string) ([]db.OrderTrackingEventEntity, e
 	return events, nil
 }
 
-func (s *Service) getOrder(orderID string) (*OrderWithItems, error) {
+func (s *Service) getOrder(orderID string) (*db.OrderEntity, error) {
 	var orderEntity db.OrderEntity
-	if err := s.db.Where("id = ?", orderID).Take(&orderEntity).Error; err != nil {
+	if err := s.db.
+		Preload("Items").
+		Where("id = ?", orderID).
+		Take(&orderEntity).Error; err != nil {
 		return nil, err
 	}
-
-	itemEntities := make([]db.OrderItemEntity, 0)
-	if err := s.db.Where("order_id = ?", orderID).Order("created_at ASC").Find(&itemEntities).Error; err != nil {
-		return nil, err
-	}
-
-	items := make([]db.OrderItemEntity, 0, len(itemEntities))
-	for i := range itemEntities {
-		items = append(items, *cloneOrderItem(&itemEntities[i]))
-	}
-
-	return &OrderWithItems{
-		Order: cloneOrder(&orderEntity),
-		Items: items,
-	}, nil
+	return &orderEntity, nil
 }
 
 func addTrackingTx(tx *gorm.DB, orderID string, from string, to string, source string, description string, now time.Time) error {
