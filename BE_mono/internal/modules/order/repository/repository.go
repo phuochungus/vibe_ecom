@@ -31,6 +31,7 @@ type Repository interface {
 	LoadTracking(orderID string) ([]entities.OrderTrackingEvent, error)
 	FindUserByID(userID string) (*entities.User, error)
 	LockProduct(tx *gorm.DB, productID string) (*entities.Product, error)
+	GetDbConn() *gorm.DB
 }
 
 type GormRepository struct {
@@ -39,6 +40,10 @@ type GormRepository struct {
 
 func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
+}
+
+func (r *GormRepository) GetDbConn() *gorm.DB {
+	return r.db
 }
 
 func (r *GormRepository) FindIdempotentOrder(userID string, idemKey string) (*entities.Order, error) {

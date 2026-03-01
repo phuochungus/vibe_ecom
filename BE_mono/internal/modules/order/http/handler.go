@@ -56,16 +56,16 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	items := make([]ordersvc.CreateOrderItemInput, 0, len(req.Items))
+	items := make([]dto.CreateOrderItemInput, 0, len(req.Items))
 	for _, i := range req.Items {
-		items = append(items, ordersvc.CreateOrderItemInput{ProductID: i.ProductID, Quantity: i.Quantity})
+		items = append(items, dto.CreateOrderItemInput{ProductID: i.ProductID, Quantity: i.Quantity})
 	}
 
-	order, apiErr := h.orders.Create(ordersvc.CreateOrderInput{
+	order, apiErr := h.orders.Create(dto.CreateOrderInput{
 		UserID:         user.ID,
 		IdempotencyKey: idempotencyKey,
 		Items:          items,
-		Shipping: ordersvc.ShippingAddress{
+		Shipping: dto.ShippingAddress{
 			RecipientName:  req.ShippingAddress.RecipientName,
 			RecipientPhone: req.ShippingAddress.RecipientPhone,
 			Line1:          req.ShippingAddress.Line1,
@@ -99,7 +99,7 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
 
-	out := h.orders.List(ordersvc.ListInput{
+	out := h.orders.List(dto.ListInput{
 		UserID:   user.ID,
 		Status:   c.Query("status"),
 		From:     from,
@@ -184,7 +184,7 @@ func (h *Handler) AdminListOrders(c *gin.Context) {
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
 
-	out := h.orders.List(ordersvc.ListInput{
+	out := h.orders.List(dto.ListInput{
 		Status:   c.Query("status"),
 		From:     from,
 		To:       to,

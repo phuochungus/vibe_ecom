@@ -1,5 +1,10 @@
 package dto
 
+import (
+	"golf-store/be-mono/internal/platform/entities"
+	"time"
+)
+
 type CreateOrderItemRequest struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
@@ -59,4 +64,48 @@ type OrderDetailDTO struct {
 	OrderSummaryDTO
 	Items    []OrderItemDTO `json:"items"`
 	Payments []any          `json:"payments"`
+}
+
+type ShippingAddress struct {
+	RecipientName  string
+	RecipientPhone string
+	Line1          string
+	Line2          string
+	Ward           string
+	District       string
+	City           string
+	Province       string
+	PostalCode     string
+	CountryCode    string
+}
+
+type CreateOrderInput struct {
+	UserID         string
+	IdempotencyKey string
+	Items          []CreateOrderItemInput
+	Shipping       ShippingAddress
+	CustomerNote   string
+}
+
+type CreateOrderItemInput struct {
+	ProductID string
+	Quantity  int
+}
+
+type ListInput struct {
+	UserID   string
+	Status   string
+	From     *time.Time
+	To       *time.Time
+	Page     int
+	PageSize int
+	Admin    bool
+}
+
+type ListOutput struct {
+	Items      []*entities.Order
+	Page       int
+	PageSize   int
+	Total      int
+	TotalPages int
 }

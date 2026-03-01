@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"golf-store/be-mono/internal/modules/order/dto"
 	"golf-store/be-mono/internal/modules/order/repository"
 	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
@@ -23,51 +24,7 @@ func New(repo repository.Repository) *Service {
 	return &Service{repo: repo}
 }
 
-type CreateOrderItemInput struct {
-	ProductID string
-	Quantity  int
-}
-
-type ShippingAddress struct {
-	RecipientName  string
-	RecipientPhone string
-	Line1          string
-	Line2          string
-	Ward           string
-	District       string
-	City           string
-	Province       string
-	PostalCode     string
-	CountryCode    string
-}
-
-type CreateOrderInput struct {
-	UserID         string
-	IdempotencyKey string
-	Items          []CreateOrderItemInput
-	Shipping       ShippingAddress
-	CustomerNote   string
-}
-
-type ListInput struct {
-	UserID   string
-	Status   string
-	From     *time.Time
-	To       *time.Time
-	Page     int
-	PageSize int
-	Admin    bool
-}
-
-type ListOutput struct {
-	Items      []*entities.Order
-	Page       int
-	PageSize   int
-	Total      int
-	TotalPages int
-}
-
-func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.APIError) {
+func (s *Service) Create(input dto.CreateOrderInput) (*entities.Order, *apperrors.APIError) {
 	idemKey := strings.TrimSpace(input.IdempotencyKey)
 	if idemKey == "" {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "Idempotency-Key is required"}
@@ -211,7 +168,7 @@ func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.AP
 	return s.GetByIDForUser(orderID, input.UserID)
 }
 
-func (s *Service) List(input ListInput) ListOutput {
+func (s *Service) List(input dto.ListInput) dto.ListOutput {
 	if input.Page <= 0 {
 		input.Page = 1
 	}
@@ -231,7 +188,7 @@ func (s *Service) List(input ListInput) ListOutput {
 
 	rows, total, err := s.repo.List(filter)
 	if err != nil {
-		return ListOutput{
+		return dto.ListOutput{
 			Items:      []*entities.Order{},
 			Page:       input.Page,
 			PageSize:   input.PageSize,
@@ -245,7 +202,7 @@ func (s *Service) List(input ListInput) ListOutput {
 		items = append(items, cloneOrder(&rows[i]))
 	}
 
-	return ListOutput{
+	return dto.ListOutput{
 		Items:      items,
 		Page:       input.Page,
 		PageSize:   input.PageSize,
