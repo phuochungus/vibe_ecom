@@ -6,9 +6,15 @@ export interface PaymentInitiateResponse {
 }
 
 export const paymentsApi = {
-  initiate: async (orderId: string) => {
+  initiate: async (orderId: string, idempotencyKey: string) => {
     const { data } = await api.post<{ success: boolean; data: PaymentInitiateResponse }>(
-      `/orders/${orderId}/payments`
+      `/orders/${orderId}/payments`,
+      undefined,
+      {
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+        },
+      }
     )
     return data.data
   },

@@ -52,7 +52,8 @@ export default function CheckoutPage() {
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      return await paymentsApi.initiate(orderId)
+      const idempotencyKey = crypto.randomUUID()
+      return await paymentsApi.initiate(orderId, idempotencyKey)
     },
   })
 
@@ -155,3 +156,4 @@ export default function CheckoutPage() {
     </div>
   )
 }
+

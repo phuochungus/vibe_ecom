@@ -53,13 +53,8 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		AdminView: false,
 	})
 
-	items := make([]dto.ProductResponseDTO, 0, len(out.Items))
-	for _, p := range out.Items {
-		items = append(items, productResponse(p))
-	}
-
 	response.OK(c, gin.H{
-		"items": items,
+		"items": out.Items,
 		"pagination": gin.H{
 			"page":        out.Page,
 			"page_size":   out.PageSize,
