@@ -34,7 +34,7 @@ export interface Product {
   sku: string
   name: string
   description?: string
-  price_cents: string
+  price: string
   stock: number
   status: ProductStatus
   image_url?: string

@@ -13,7 +13,7 @@ type Product struct {
 	SKU         string         `gorm:"column:sku;type:varchar(64);uniqueIndex;not null" json:"sku"`
 	Name        string         `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	Description string         `gorm:"column:description;type:text" json:"description"`
-	Price       int64          `gorm:"column:price_cents;not null" json:"price_cents"`
+	Price       int64          `gorm:"column:price;not null" json:"price"`
 	Stock       int            `gorm:"column:stock;not null" json:"stock"`
 	Status      string         `gorm:"column:status;type:enum('ACTIVE','INACTIVE','DISCONTINUED');not null;default:ACTIVE" json:"status"`
 	ImageURL    string         `gorm:"column:image_url;type:varchar(500)" json:"image_url"`

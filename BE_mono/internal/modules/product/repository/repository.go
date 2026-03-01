@@ -51,10 +51,10 @@ func (r *GormRepository) List(filter ListFilter) ([]*entities.Product, int64, er
 		query = query.Where("(LOWER(name) LIKE ? OR LOWER(sku) LIKE ?)", q, q)
 	}
 	if filter.Min != nil {
-		query = query.Where("price_cents >= ?", *filter.Min)
+		query = query.Where("price >= ?", *filter.Min)
 	}
 	if filter.Max != nil {
-		query = query.Where("price_cents <= ?", *filter.Max)
+		query = query.Where("price <= ?", *filter.Max)
 	}
 
 	sortBy := sanitizeSortBy(filter.SortBy)
@@ -117,7 +117,7 @@ func (r *GormRepository) SoftDelete(id string, updates map[string]any) (int64, e
 func sanitizeSortBy(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "price":
-		return "price_cents"
+		return "price"
 	case "created_at":
 		return "created_at"
 	default:

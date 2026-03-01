@@ -83,7 +83,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           description={
             <Space direction="vertical" style={{ width: '100%' }}>
               <div className="price" style={{ fontSize: 20, fontWeight: 600 }}>
-                {formatCurrency(product.price_cents)}
+                {formatCurrency(product.price)}
               </div>
               {product.stock > 0 && product.stock < 10 && (
                 <Tag color="warning">Chỉ còn {product.stock} sản phẩm</Tag>

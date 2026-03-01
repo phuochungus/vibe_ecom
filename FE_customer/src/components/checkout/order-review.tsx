@@ -57,7 +57,7 @@ export default function OrderReview({ items, address, subtotal, shippingFee, tot
                 title={item.product.name}
                 description={`Số lượng: ${item.quantity}`}
               />
-              <div className="price">{formatCurrency(parseFloat(item.product.price_cents) * item.quantity)}</div>
+              <div className="price">{formatCurrency(parseFloat(item.product.price) * item.quantity)}</div>
             </List.Item>
           )}
         />

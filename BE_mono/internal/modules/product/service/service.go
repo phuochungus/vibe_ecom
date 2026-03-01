@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"math"
+
 	"github.com/google/uuid"
 
 	"golf-store/be-mono/internal/modules/product/repository"
@@ -79,7 +81,7 @@ func (s *Service) List(input ListInput) response.PageDto[*entities.Product] {
 	}
 	if input.AdminView == false {
 		for i := range items {
-			items[i].Stock = 0
+			items[i].Stock = math.MaxInt
 		}
 	}
 
@@ -152,7 +154,7 @@ func (s *Service) AdminUpdate(productID string, input AdminUpsertInput) (*entiti
 		updateMap["description"] = strings.TrimSpace(input.Description)
 	}
 	if input.Price > 0 {
-		updateMap["price_cents"] = input.Price
+		updateMap["price"] = input.Price
 	}
 	if input.Stock >= 0 {
 		updateMap["stock"] = input.Stock
@@ -216,7 +218,7 @@ func ParseStatus(status string) (string, error) {
 func sanitizeSortBy(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "price":
-		return "price_cents"
+		return "price"
 	case "created_at":
 		return "created_at"
 	default:
