@@ -15,10 +15,10 @@ type User struct {
 	LastLoginAt         *time.Time     `gorm:"column:last_login_at" json:"last_login_at,omitempty"`
 	CreatedAt           time.Time      `gorm:"column:created_at;not null" json:"created_at"`
 	UpdatedAt           time.Time      `gorm:"column:updated_at;not null" json:"updated_at"`
-	AuthTokens          []AuthToken    `gorm:"foreignKey:UserID;references:ID"`
-	Addresses           []UserAddress  `gorm:"foreignKey:UserID;references:ID"`
-	Orders              []Order        `gorm:"foreignKey:UserID;references:ID"`
-	Notifications       []Notification `gorm:"foreignKey:UserID;references:ID"`
+	AuthTokens          []AuthToken    `gorm:"foreignKey:UserID;references:ID" json:"-"`
+	Addresses           []UserAddress  `gorm:"foreignKey:UserID;references:ID" json:"addresses,omitempty"`
+	Orders              []Order        `gorm:"foreignKey:UserID;references:ID" json:"orders,omitempty"`
+	Notifications       []Notification `gorm:"foreignKey:UserID;references:ID" json:"notifications,omitempty"`
 }
 
 func (User) TableName() string {
