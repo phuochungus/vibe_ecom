@@ -5,7 +5,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
@@ -29,7 +28,7 @@ func NewGorm(db *gorm.DB) *GormRepository {
 func (r *GormRepository) SumGrossRevenue(from, to time.Time) (int64, error) {
 	var result int64
 	err := r.db.Model(&entities.Order{}).
-		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", db.OrderStatusCompleted, from, to).
+		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", entities.OrderStatusCompleted, from, to).
 		Select("COALESCE(SUM(total_amount), 0)").
 		Scan(&result).Error
 	return result, err
@@ -38,7 +37,7 @@ func (r *GormRepository) SumGrossRevenue(from, to time.Time) (int64, error) {
 func (r *GormRepository) CountCompletedOrders(from, to time.Time) (int64, error) {
 	var count int64
 	err := r.db.Model(&entities.Order{}).
-		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", db.OrderStatusCompleted, from, to).
+		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", entities.OrderStatusCompleted, from, to).
 		Count(&count).Error
 	return count, err
 }
@@ -46,7 +45,7 @@ func (r *GormRepository) CountCompletedOrders(from, to time.Time) (int64, error)
 func (r *GormRepository) SumRefundAmount(from, to time.Time) (int64, error) {
 	var result int64
 	err := r.db.Model(&entities.PaymentTransaction{}).
-		Where("txn_type = ? AND status = ? AND created_at >= ? AND created_at < ?", db.PaymentTxnTypeRefund, db.PaymentTxnStateSuccess, from, to).
+		Where("txn_type = ? AND status = ? AND created_at >= ? AND created_at < ?", entities.PaymentTxnTypeRefund, entities.PaymentTxnStateSuccess, from, to).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&result).Error
 	return result, err
@@ -55,7 +54,7 @@ func (r *GormRepository) SumRefundAmount(from, to time.Time) (int64, error) {
 func (r *GormRepository) CountPaymentTotal(from, to time.Time) (int64, error) {
 	var count int64
 	err := r.db.Model(&entities.PaymentTransaction{}).
-		Where("txn_type = ? AND created_at >= ? AND created_at < ?", db.PaymentTxnTypePayment, from, to).
+		Where("txn_type = ? AND created_at >= ? AND created_at < ?", entities.PaymentTxnTypePayment, from, to).
 		Count(&count).Error
 	return count, err
 }
@@ -63,14 +62,14 @@ func (r *GormRepository) CountPaymentTotal(from, to time.Time) (int64, error) {
 func (r *GormRepository) CountPaymentSuccess(from, to time.Time) (int64, error) {
 	var count int64
 	err := r.db.Model(&entities.PaymentTransaction{}).
-		Where("txn_type = ? AND status = ? AND created_at >= ? AND created_at < ?", db.PaymentTxnTypePayment, db.PaymentTxnStateSuccess, from, to).
+		Where("txn_type = ? AND status = ? AND created_at >= ? AND created_at < ?", entities.PaymentTxnTypePayment, entities.PaymentTxnStateSuccess, from, to).
 		Count(&count).Error
 	return count, err
 }
 
 func (r *GormRepository) ListCompletedOrders(from, to time.Time, page, pageSize int) ([]*entities.Order, int64, error) {
 	query := r.db.Model(&entities.Order{}).
-		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", db.OrderStatusCompleted, from, to)
+		Where("order_status = ? AND placed_at >= ? AND placed_at < ?", entities.OrderStatusCompleted, from, to)
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {

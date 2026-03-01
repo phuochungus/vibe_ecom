@@ -4,7 +4,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
@@ -59,7 +58,7 @@ func (r *GormRepository) ProcessWebhookTx(orderID string, provider string, provi
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var payment entities.PaymentTransaction
 		lockErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("order_id = ? AND provider = ? AND status = ?", orderID, provider, db.PaymentTxnStatePending).
+			Where("order_id = ? AND provider = ? AND status = ?", orderID, provider, entities.PaymentTxnStatePending).
 			Order("created_at ASC").
 			Take(&payment).Error
 
@@ -76,12 +75,12 @@ func (r *GormRepository) ProcessWebhookTx(orderID string, provider string, provi
 			payment = entities.PaymentTransaction{
 				ID:              providerTxnCode, // Assuming providerTxnCode is used as ID or injected later, handled by service if not uuid
 				OrderID:         orderID,
-				TxnType:         db.PaymentTxnTypePayment,
+				TxnType:         entities.PaymentTxnTypePayment,
 				Provider:        provider,
 				ProviderTxnCode: &providerTxnCode,
 				Amount:          order.TotalAmount,
 				CurrencyCode:    order.CurrencyCode,
-				Status:          db.PaymentTxnStatePending,
+				Status:          entities.PaymentTxnStatePending,
 			}
 			// The ID generation for new payment in webhook is handled in the service via uuid.NewString(), we will need to inject it or refactor. For now, returning the logic to service might be cleaner if ID generation is there, OR pass payment struct in from service.
 			// Let's adjust this to take a pre-built payment entity to insert if needed, or return special error to let service handle it.

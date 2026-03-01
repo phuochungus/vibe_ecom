@@ -6,7 +6,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
@@ -42,7 +41,7 @@ func (r *GormRepository) List(filter ListFilter) ([]*entities.Product, int64, er
 	query := r.db.Model(&entities.Product{}).Where("deleted_at IS NULL")
 
 	if !filter.AdminView {
-		query = query.Where("status = ?", db.ProductStatusActive)
+		query = query.Where("status = ?", entities.ProductStatusActive)
 	}
 	if strings.TrimSpace(filter.Status) != "" {
 		query = query.Where("status = ?", strings.ToUpper(strings.TrimSpace(filter.Status)))
@@ -86,7 +85,7 @@ func (r *GormRepository) List(filter ListFilter) ([]*entities.Product, int64, er
 func (r *GormRepository) FindByID(id string, adminView bool) (*entities.Product, error) {
 	query := r.db.Where("id = ? AND deleted_at IS NULL", id)
 	if !adminView {
-		query = query.Where("status = ?", db.ProductStatusActive)
+		query = query.Where("status = ?", entities.ProductStatusActive)
 	}
 
 	var entity entities.Product

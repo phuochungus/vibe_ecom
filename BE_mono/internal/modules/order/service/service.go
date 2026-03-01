@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm"
 
 	"golf-store/be-mono/internal/modules/order/repository"
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
@@ -96,7 +95,7 @@ func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.AP
 		}
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query user"}
 	}
-	if user.Status != db.UserStatusActive {
+	if user.Status != entities.UserStatusActive {
 		return nil, &apperrors.APIError{Status: http.StatusUnauthorized, Code: "UNAUTHORIZED", Message: "Unauthorized"}
 	}
 
@@ -117,7 +116,7 @@ func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.AP
 			return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to lock product"}
 		}
 
-		if product.DeletedAt != nil || product.Status != db.ProductStatusActive {
+		if product.DeletedAt != nil || product.Status != entities.ProductStatusActive {
 			return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "INVALID_ITEMS", Message: "product not available"}
 		}
 		if product.Stock < item.Quantity {
@@ -152,8 +151,8 @@ func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.AP
 		OrderCode:             orderCode,
 		IdempotencyKey:        idemKey,
 		UserID:                input.UserID,
-		OrderStatus:           db.OrderStatusPendingPayment,
-		PaymentStatus:         db.PaymentStatusUnpaid,
+		OrderStatus:           entities.OrderStatusPendingPayment,
+		PaymentStatus:         entities.PaymentStatusUnpaid,
 		CurrencyCode:          "VND",
 		SubtotalAmount:        subtotal,
 		DiscountAmount:        discountAmount,
@@ -179,8 +178,8 @@ func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.AP
 	tracking := &entities.OrderTrackingEvent{
 		ID:          uuid.NewString(),
 		OrderID:     orderID,
-		FromStatus:  stringPtrOrNil(db.OrderStatusNew),
-		ToStatus:    db.OrderStatusPendingPayment,
+		FromStatus:  stringPtrOrNil(entities.OrderStatusNew),
+		ToStatus:    entities.OrderStatusPendingPayment,
 		SourceType:  "SYSTEM",
 		Description: stringPtrOrNil("Order created"),
 		OccurredAt:  now,
@@ -194,7 +193,7 @@ func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.AP
 		EventKey:  orderID,
 		Title:     "Đơn hàng đã tạo",
 		Content:   "Đơn hàng của bạn đã được tạo và đang chờ thanh toán",
-		Status:    db.NotificationStatusSent,
+		Status:    entities.NotificationStatusSent,
 		IsRead:    false,
 		SentAt:    &now,
 		CreatedAt: now,
@@ -284,7 +283,7 @@ func (s *Service) CancelByUser(orderID string, userID string, reason string) (*e
 	now := time.Now().UTC()
 
 	updates := map[string]any{
-		"order_status": db.OrderStatusCancelled,
+		"order_status": entities.OrderStatusCancelled,
 		"updated_at":   now,
 	}
 	if trimmedReason := strings.TrimSpace(reason); trimmedReason != "" {
@@ -296,7 +295,7 @@ func (s *Service) CancelByUser(orderID string, userID string, reason string) (*e
 	tracking := &entities.OrderTrackingEvent{
 		ID:          uuid.NewString(),
 		OrderID:     orderID,
-		ToStatus:    db.OrderStatusCancelled,
+		ToStatus:    entities.OrderStatusCancelled,
 		SourceType:  "USER",
 		Description: stringPtrOrNil("Order canceled by user"),
 		OccurredAt:  now,
@@ -310,7 +309,7 @@ func (s *Service) CancelByUser(orderID string, userID string, reason string) (*e
 		EventKey:  orderID,
 		Title:     "Đơn hàng đã hủy",
 		Content:   "Đơn hàng của bạn đã được hủy",
-		Status:    db.NotificationStatusSent,
+		Status:    entities.NotificationStatusSent,
 		IsRead:    false,
 		SentAt:    &now,
 		CreatedAt: now,
@@ -388,8 +387,8 @@ func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason stri
 		"order_status": toStatus,
 		"updated_at":   now,
 	}
-	if toStatus == db.OrderStatusPaid {
-		updates["payment_status"] = db.PaymentStatusPaid
+	if toStatus == entities.OrderStatusPaid {
+		updates["payment_status"] = entities.PaymentStatusPaid
 	}
 
 	tracking := &entities.OrderTrackingEvent{
@@ -409,7 +408,7 @@ func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason stri
 		EventKey:  orderID,
 		Title:     "Đơn hàng cập nhật trạng thái",
 		Content:   fmt.Sprintf("Đơn hàng chuyển sang %s", toStatus),
-		Status:    db.NotificationStatusSent,
+		Status:    entities.NotificationStatusSent,
 		IsRead:    false,
 		SentAt:    &now,
 		CreatedAt: now,
@@ -447,7 +446,7 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 		ID:        uuid.NewString(),
 		UserID:    order.UserID,
 		Channel:   "IN_APP",
-		Status:    db.NotificationStatusSent,
+		Status:    entities.NotificationStatusSent,
 		IsRead:    false,
 		SentAt:    &now,
 		CreatedAt: now,
@@ -455,14 +454,14 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 	}
 
 	if success {
-		updates["payment_status"] = db.PaymentStatusPaid
-		if order.OrderStatus == db.OrderStatusPendingPayment {
-			updates["order_status"] = db.OrderStatusPaid
+		updates["payment_status"] = entities.PaymentStatusPaid
+		if order.OrderStatus == entities.OrderStatusPendingPayment {
+			updates["order_status"] = entities.OrderStatusPaid
 
 			tracking = &entities.OrderTrackingEvent{
 				ID:          uuid.NewString(),
 				OrderID:     orderID,
-				ToStatus:    db.OrderStatusPaid,
+				ToStatus:    entities.OrderStatusPaid,
 				SourceType:  "PAYMENT_GATEWAY",
 				Description: stringPtrOrNil("Payment succeeded"),
 				OccurredAt:  now,
@@ -475,7 +474,7 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 		notification.Content = "Thanh toán đơn hàng thành công"
 
 	} else {
-		updates["payment_status"] = db.PaymentStatusFailed
+		updates["payment_status"] = entities.PaymentStatusFailed
 		notification.EventType = "payment.failed"
 		notification.EventKey = orderID
 		notification.Title = "Thanh toán thất bại"
@@ -505,13 +504,13 @@ func stringPtrOrNil(v string) *string {
 func ParseOrderStatus(value string) (string, error) {
 	up := strings.ToUpper(strings.TrimSpace(value))
 	switch up {
-	case db.OrderStatusNew,
-		db.OrderStatusPendingPayment,
-		db.OrderStatusPaid,
-		db.OrderStatusProcessing,
-		db.OrderStatusShipping,
-		db.OrderStatusCompleted,
-		db.OrderStatusCancelled:
+	case entities.OrderStatusNew,
+		entities.OrderStatusPendingPayment,
+		entities.OrderStatusPaid,
+		entities.OrderStatusProcessing,
+		entities.OrderStatusShipping,
+		entities.OrderStatusCompleted,
+		entities.OrderStatusCancelled:
 		return up, nil
 	default:
 		return "", fmt.Errorf("invalid order status")

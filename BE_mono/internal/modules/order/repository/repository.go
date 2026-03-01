@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
@@ -269,7 +268,7 @@ func (r *GormRepository) LockProduct(tx *gorm.DB, productID string) (*entities.P
 
 func canCancel(status string) bool {
 	switch status {
-	case db.OrderStatusNew, db.OrderStatusPendingPayment, db.OrderStatusPaid, db.OrderStatusProcessing:
+	case entities.OrderStatusNew, entities.OrderStatusPendingPayment, entities.OrderStatusPaid, entities.OrderStatusProcessing:
 		return true
 	default:
 		return false
@@ -281,13 +280,13 @@ func isValidTransition(from string, to string) bool {
 		return true
 	}
 	allowed := map[string][]string{
-		db.OrderStatusNew:            {db.OrderStatusPendingPayment, db.OrderStatusCancelled},
-		db.OrderStatusPendingPayment: {db.OrderStatusPaid, db.OrderStatusCancelled},
-		db.OrderStatusPaid:           {db.OrderStatusProcessing, db.OrderStatusCancelled},
-		db.OrderStatusProcessing:     {db.OrderStatusShipping, db.OrderStatusCancelled},
-		db.OrderStatusShipping:       {db.OrderStatusCompleted},
-		db.OrderStatusCompleted:      {},
-		db.OrderStatusCancelled:      {},
+		entities.OrderStatusNew:            {entities.OrderStatusPendingPayment, entities.OrderStatusCancelled},
+		entities.OrderStatusPendingPayment: {entities.OrderStatusPaid, entities.OrderStatusCancelled},
+		entities.OrderStatusPaid:           {entities.OrderStatusProcessing, entities.OrderStatusCancelled},
+		entities.OrderStatusProcessing:     {entities.OrderStatusShipping, entities.OrderStatusCancelled},
+		entities.OrderStatusShipping:       {entities.OrderStatusCompleted},
+		entities.OrderStatusCompleted:      {},
+		entities.OrderStatusCancelled:      {},
 	}
 	for _, candidate := range allowed[from] {
 		if candidate == to {

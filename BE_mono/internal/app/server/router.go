@@ -15,7 +15,7 @@ import (
 	producthttp "golf-store/be-mono/internal/modules/product/http"
 	reportinghttp "golf-store/be-mono/internal/modules/reporting/http"
 	userhttp "golf-store/be-mono/internal/modules/user/http"
-	"golf-store/be-mono/internal/platform/db"
+	"golf-store/be-mono/internal/platform/entities"
 	"golf-store/be-mono/internal/platform/observability"
 	"golf-store/be-mono/internal/shared/middleware"
 )
@@ -84,7 +84,7 @@ func NewRouter(health *HealthHandler, modules RouteModules) *gin.Engine {
 		}
 
 		admin := protected.Group("/admin")
-		admin.Use(middleware.RequireRole(db.RoleAdmin))
+		admin.Use(middleware.RequireRole(entities.RoleAdmin))
 		{
 			modules.Products.RegisterAdmin(admin)
 			modules.Orders.RegisterAdmin(admin)

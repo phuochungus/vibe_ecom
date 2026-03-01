@@ -10,7 +10,6 @@ import (
 
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
 	"golf-store/be-mono/internal/modules/payment/repository"
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
@@ -78,12 +77,12 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 	payment := entities.PaymentTransaction{
 		ID:             paymentID,
 		OrderID:        input.OrderID,
-		TxnType:        db.PaymentTxnTypePayment,
+		TxnType:        entities.PaymentTxnTypePayment,
 		Provider:       provider,
 		IdempotencyKey: &idemKey,
 		Amount:         order.TotalAmount,
 		CurrencyCode:   order.CurrencyCode,
-		Status:         db.PaymentTxnStatePending,
+		Status:         entities.PaymentTxnStatePending,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -93,7 +92,7 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 
 	return &CreatePaymentOutput{
 		PaymentID:   paymentID,
-		Status:      db.PaymentTxnStatePending,
+		Status:      entities.PaymentTxnStatePending,
 		CheckoutURL: fakeCheckoutURL(provider, paymentID),
 	}, nil
 }
@@ -142,7 +141,7 @@ func (s *Service) ProcessWebhook(provider string, payload map[string]any) (map[s
 	providerTxnCode = strings.TrimSpace(providerTxnCode)
 
 	paymentID := ""
-	finalState := db.PaymentTxnStateFailed
+	finalState := entities.PaymentTxnStateFailed
 	deduplicated := false
 
 	duplicate, err := s.repo.FindWebhookDuplicate(providerTxnCode)
@@ -155,9 +154,9 @@ func (s *Service) ProcessWebhook(provider string, payload map[string]any) (map[s
 
 	if !deduplicated {
 		if status == "SUCCESS" || status == "PAID" {
-			finalState = db.PaymentTxnStateSuccess
+			finalState = entities.PaymentTxnStateSuccess
 		} else {
-			finalState = db.PaymentTxnStateFailed
+			finalState = entities.PaymentTxnStateFailed
 		}
 
 		paymentID, err = s.repo.ProcessWebhookTx(orderID, provider, providerTxnCode, status, finalState)
@@ -173,7 +172,7 @@ func (s *Service) ProcessWebhook(provider string, payload map[string]any) (map[s
 		return map[string]any{"status": "deduplicated", "payment_id": paymentID, "provider_txn_code": providerTxnCode}, nil
 	}
 
-	_, orderErr := s.orders.MarkPaymentResult(orderID, finalState == db.PaymentTxnStateSuccess, "Payment webhook processed")
+	_, orderErr := s.orders.MarkPaymentResult(orderID, finalState == entities.PaymentTxnStateSuccess, "Payment webhook processed")
 	if orderErr != nil {
 		return nil, orderErr
 	}

@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 
 	"golf-store/be-mono/internal/modules/product/repository"
-	"golf-store/be-mono/internal/platform/db"
 	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
@@ -116,7 +115,7 @@ func (s *Service) AdminCreate(input AdminUpsertInput) (*entities.Product, *apper
 	id := uuid.NewString()
 	status := input.Status
 	if status == "" {
-		status = db.ProductStatusActive
+		status = entities.ProductStatusActive
 	}
 	entity := &entities.Product{
 		ID:          id,
@@ -180,7 +179,7 @@ func (s *Service) AdminDelete(productID string) *apperrors.APIError {
 	now := time.Now().UTC()
 	updates := map[string]any{
 		"deleted_at": now,
-		"status":     db.ProductStatusDiscontinued,
+		"status":     entities.ProductStatusDiscontinued,
 		"updated_at": now,
 	}
 
@@ -196,16 +195,16 @@ func (s *Service) AdminDelete(productID string) *apperrors.APIError {
 
 func ParseStatus(status string) (string, error) {
 	if status == "" {
-		return db.ProductStatusActive, nil
+		return entities.ProductStatusActive, nil
 	}
 	up := strings.ToUpper(strings.TrimSpace(status))
 	switch up {
-	case db.ProductStatusActive:
-		return db.ProductStatusActive, nil
-	case db.ProductStatusInactive:
-		return db.ProductStatusInactive, nil
-	case db.ProductStatusDiscontinued:
-		return db.ProductStatusDiscontinued, nil
+	case entities.ProductStatusActive:
+		return entities.ProductStatusActive, nil
+	case entities.ProductStatusInactive:
+		return entities.ProductStatusInactive, nil
+	case entities.ProductStatusDiscontinued:
+		return entities.ProductStatusDiscontinued, nil
 	default:
 		return "", fmt.Errorf("invalid product status")
 	}

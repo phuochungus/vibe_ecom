@@ -1,4 +1,4 @@
-package db
+package entities
 
 const (
 	RoleUser  = "USER"
