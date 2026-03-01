@@ -127,7 +127,7 @@ func (r *GormRepository) List(filter ListFilter) ([]entities.Order, int64, error
 
 func (r *GormRepository) FindByID(orderID string) (*entities.Order, error) {
 	var orderEntity entities.Order
-	if err := r.db.Preload("Items").Where("id = ?", orderID).Take(&orderEntity).Error; err != nil {
+	if err := r.db.Preload("Items").Preload("PaymentTransactions").Where("id = ?", orderID).Take(&orderEntity).Error; err != nil {
 		return nil, err
 	}
 	return &orderEntity, nil

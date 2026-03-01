@@ -9,9 +9,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/product/dto"
 	prodsvc "golf-store/be-mono/internal/modules/product/service"
-	entities "golf-store/be-mono/internal/platform/entities"
 	"golf-store/be-mono/internal/shared/response"
-	"golf-store/be-mono/internal/shared/utils"
 )
 
 type Handler struct {
@@ -53,15 +51,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		AdminView: false,
 	})
 
-	response.OK(c, gin.H{
-		"items": out.Items,
-		"pagination": gin.H{
-			"page":        out.Page,
-			"page_size":   out.PageSize,
-			"total":       out.Total,
-			"total_pages": out.TotalPages,
-		},
-	})
+	response.OK(c, out)
 }
 
 func (h *Handler) GetProduct(c *gin.Context) {
@@ -71,7 +61,7 @@ func (h *Handler) GetProduct(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, productResponse(p))
+	response.OK(c, p)
 }
 
 func (h *Handler) AdminCreateProduct(c *gin.Context) {
@@ -109,7 +99,7 @@ func (h *Handler) AdminCreateProduct(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.Created(c, productResponse(product))
+	response.Created(c, product)
 }
 
 func (h *Handler) AdminUpdateProduct(c *gin.Context) {
@@ -158,7 +148,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, productResponse(product))
+	response.OK(c, product)
 }
 
 func (h *Handler) AdminDeleteProduct(c *gin.Context) {
@@ -168,22 +158,6 @@ func (h *Handler) AdminDeleteProduct(c *gin.Context) {
 		return
 	}
 	response.NoContent(c)
-}
-
-func productResponse(p *entities.Product) dto.ProductResponseDTO {
-	if p == nil {
-		return dto.ProductResponseDTO{}
-	}
-	return dto.ProductResponseDTO{
-		ID:          p.ID,
-		SKU:         p.SKU,
-		Name:        p.Name,
-		Description: p.Description,
-		Price:       utils.ToAmountString(p.Price),
-		Stock:       p.Stock,
-		Status:      p.Status,
-		ImageURL:    p.ImageURL,
-	}
 }
 
 func parseIntDefault(value string, fallback int) int {

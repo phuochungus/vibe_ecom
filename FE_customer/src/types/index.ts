@@ -13,6 +13,7 @@ export type OrderStatus =
   | 'COMPLETED'
   | 'CANCELLED'
 
+export type PaymentMethod = 'COD' | 'MOMO'
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED'
 export type PaymentTxnState = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED'
 export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED'
@@ -33,7 +34,7 @@ export interface Product {
   sku: string
   name: string
   description?: string
-  price: string
+  price_cents: string
   stock: number
   status: ProductStatus
   image_url?: string
@@ -57,8 +58,8 @@ export type ProductUpdatePayload = Partial<ProductCreatePayload>
 export interface OrderItem {
   id: string
   product_id: string
-  product_sku_snapshot: string
-  product_name_snapshot: string
+  sku: string
+  name: string
   unit_price: string
   quantity: number
   line_total: string
@@ -184,6 +185,7 @@ export interface OrderCreatePayload {
     product_id: string
     quantity: number
   }[]
+  payment_method: PaymentMethod
   shipping_recipient_name: string
   shipping_phone: string
   shipping_line1: string

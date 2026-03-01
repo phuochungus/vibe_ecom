@@ -199,7 +199,7 @@ func (s *Service) List(input dto.ListInput) dto.ListOutput {
 
 	items := make([]*entities.Order, 0, len(rows))
 	for i := range rows {
-		items = append(items, cloneOrder(&rows[i]))
+		items = append(items, &rows[i])
 	}
 
 	return dto.ListOutput{
@@ -479,38 +479,4 @@ func calcTotalPages(total int, pageSize int) int {
 		return 0
 	}
 	return (total + pageSize - 1) / pageSize
-}
-
-func cloneOrder(entity *entities.Order) *entities.Order {
-	if entity == nil {
-		return nil
-	}
-	copy := *entity
-	copy.CreatedAt = copy.CreatedAt.UTC()
-	copy.UpdatedAt = copy.UpdatedAt.UTC()
-	copy.PlacedAt = copy.PlacedAt.UTC()
-	if copy.PaymentDueAt != nil {
-		t := copy.PaymentDueAt.UTC()
-		copy.PaymentDueAt = &t
-	}
-	return &copy
-}
-
-func cloneOrderItem(entity *entities.OrderItem) *entities.OrderItem {
-	if entity == nil {
-		return nil
-	}
-	copy := *entity
-	copy.CreatedAt = copy.CreatedAt.UTC()
-	copy.UpdatedAt = copy.UpdatedAt.UTC()
-	return &copy
-}
-
-func cloneTracking(entity *entities.OrderTrackingEvent) *entities.OrderTrackingEvent {
-	if entity == nil {
-		return nil
-	}
-	copy := *entity
-	copy.OccurredAt = copy.OccurredAt.UTC()
-	return &copy
 }

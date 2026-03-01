@@ -12,7 +12,7 @@ export default function PaymentReturnPage() {
 
   useEffect(() => {
     // In production, you might want to verify payment status with backend here
-    if (!orderId || status !== 'PAID') {
+    if (!orderId || (status !== 'PAID' && status !== 'COD')) {
       // Invalid payment result
       setTimeout(() => navigate('/orders'), 3000)
     }
@@ -22,6 +22,27 @@ export default function PaymentReturnPage() {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
         <Spin size="large" />
+      </div>
+    )
+  }
+
+  if (status === 'COD') {
+    return (
+      <div style={{ padding: 48 }}>
+        <Result
+          icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+          status="success"
+          title="Đặt hàng thành công!"
+          subTitle="Đơn hàng của bạn đã được tạo. Bạn sẽ thanh toán khi nhận hàng (COD)."
+          extra={[
+            <Button type="primary" key="orders" onClick={() => navigate('/orders')}>
+              Xem đơn hàng
+            </Button>,
+            <Button key="continue" onClick={() => navigate('/products')}>
+              Tiếp tục mua sắm
+            </Button>,
+          ]}
+        />
       </div>
     )
   }

@@ -11,6 +11,7 @@ import (
 	"golf-store/be-mono/internal/modules/product/repository"
 	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
+	"golf-store/be-mono/internal/shared/response"
 )
 
 type Service struct {
@@ -33,14 +34,6 @@ type ListInput struct {
 	AdminView bool
 }
 
-type ListOutput struct {
-	Items      []*entities.Product
-	Page       int
-	PageSize   int
-	Total      int
-	TotalPages int
-}
-
 type AdminUpsertInput struct {
 	SKU         string
 	Name        string
@@ -51,7 +44,7 @@ type AdminUpsertInput struct {
 	ImageURL    string
 }
 
-func (s *Service) List(input ListInput) ListOutput {
+func (s *Service) List(input ListInput) response.PageDto[*entities.Product] {
 	if input.Page <= 0 {
 		input.Page = 1
 	}
@@ -72,22 +65,32 @@ func (s *Service) List(input ListInput) ListOutput {
 	}
 
 	items, total, err := s.repo.List(filter)
+
 	if err != nil {
-		return ListOutput{
-			Items:      []*entities.Product{},
-			Page:       input.Page,
-			PageSize:   input.PageSize,
-			Total:      0,
-			TotalPages: 0,
+		return response.PageDto[*entities.Product]{
+			Items: []*entities.Product{},
+			Pagination: response.PageMeta{
+				Page:       input.Page,
+				PageSize:   input.PageSize,
+				Total:      0,
+				TotalPages: 0,
+			},
+		}
+	}
+	if input.AdminView == false {
+		for i := range items {
+			items[i].Stock = 0
 		}
 	}
 
-	return ListOutput{
-		Items:      items,
-		Page:       input.Page,
-		PageSize:   input.PageSize,
-		Total:      int(total),
-		TotalPages: calcTotalPages(int(total), input.PageSize),
+	return response.PageDto[*entities.Product]{
+		Items: items,
+		Pagination: response.PageMeta{
+			Page:       input.Page,
+			PageSize:   input.PageSize,
+			Total:      int(total),
+			TotalPages: calcTotalPages(int(total), input.PageSize),
+		},
 	}
 }
 

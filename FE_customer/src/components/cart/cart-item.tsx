@@ -28,7 +28,7 @@ export default function CartItem({ item }: CartItemProps) {
     message.success('Đã xóa sản phẩm khỏi giỏ hàng')
   }
 
-  const lineTotal = parseFloat(item.product.price) * item.quantity
+  const lineTotal = parseFloat(item.product.price_cents) * item.quantity
 
   return (
     <Card size="small" style={{ marginBottom: 12 }}>
@@ -61,7 +61,7 @@ export default function CartItem({ item }: CartItemProps) {
             </Col>
 
             <Col xs={8} md={4}>
-              <div className="price">{formatCurrency(item.product.price)}</div>
+              <div className="price">{formatCurrency(item.product.price_cents)}</div>
             </Col>
 
             <Col xs={8} md={4}>

@@ -1,5 +1,6 @@
-import { Card, Descriptions, List, Space, Divider, Typography } from 'antd'
-import type { CartItem } from '@/types'
+import { Card, Descriptions, List, Space, Divider, Typography, Radio } from 'antd'
+import { DollarOutlined, WalletOutlined } from '@ant-design/icons'
+import type { CartItem, PaymentMethod } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import type { AddressFormValues } from './address-form'
 
@@ -11,9 +12,11 @@ interface OrderReviewProps {
   subtotal: number
   shippingFee: number
   total: number
+  paymentMethod: PaymentMethod
+  onPaymentMethodChange: (method: PaymentMethod) => void
 }
 
-export default function OrderReview({ items, address, subtotal, shippingFee, total }: OrderReviewProps) {
+export default function OrderReview({ items, address, subtotal, shippingFee, total, paymentMethod, onPaymentMethodChange }: OrderReviewProps) {
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       {/* Shipping Address */}
@@ -54,10 +57,46 @@ export default function OrderReview({ items, address, subtotal, shippingFee, tot
                 title={item.product.name}
                 description={`Số lượng: ${item.quantity}`}
               />
-              <div className="price">{formatCurrency(parseFloat(item.product.price) * item.quantity)}</div>
+              <div className="price">{formatCurrency(parseFloat(item.product.price_cents) * item.quantity)}</div>
             </List.Item>
           )}
         />
+      </Card>
+
+      {/* Payment Method */}
+      <Card title="Hình thức thanh toán" size="small">
+        <Radio.Group
+          value={paymentMethod}
+          onChange={(e) => onPaymentMethodChange(e.target.value)}
+          style={{ width: '100%' }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Radio value="COD" style={{ padding: '8px 0' }}>
+              <Space>
+                <DollarOutlined style={{ fontSize: 20, color: '#52c41a' }} />
+                <div>
+                  <Text strong>Thanh toán khi nhận hàng (COD)</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Thanh toán bằng tiền mặt khi nhận hàng
+                  </Text>
+                </div>
+              </Space>
+            </Radio>
+            <Radio value="MOMO" style={{ padding: '8px 0' }}>
+              <Space>
+                <WalletOutlined style={{ fontSize: 20, color: '#a50064' }} />
+                <div>
+                  <Text strong>Ví MoMo</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Thanh toán qua ví điện tử MoMo
+                  </Text>
+                </div>
+              </Space>
+            </Radio>
+          </Space>
+        </Radio.Group>
       </Card>
 
       {/* Order Summary */}

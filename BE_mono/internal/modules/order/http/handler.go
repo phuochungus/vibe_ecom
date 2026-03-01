@@ -132,7 +132,7 @@ func (h *Handler) GetOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderDetailResponse(order))
+	response.OK(c, order)
 }
 
 func (h *Handler) CancelOrder(c *gin.Context) {
@@ -148,7 +148,7 @@ func (h *Handler) CancelOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderSummaryResponse(order))
+	response.OK(c, order)
 }
 
 func (h *Handler) GetTracking(c *gin.Context) {
@@ -215,7 +215,7 @@ func (h *Handler) AdminGetOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, orderDetailResponse(order))
+	response.OK(c, order)
 }
 
 func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
@@ -257,28 +257,6 @@ func orderSummaryResponse(o *entities.Order) dto.OrderSummaryDTO {
 		result.PaymentDueAt = o.PaymentDueAt.Format(time.RFC3339Nano)
 	}
 	return result
-}
-
-func orderDetailResponse(o *entities.Order) dto.OrderDetailDTO {
-	if o == nil || o.Items == nil {
-		return dto.OrderDetailDTO{}
-	}
-	items := make([]dto.OrderItemDTO, 0, len(o.Items))
-	for _, item := range o.Items {
-		items = append(items, dto.OrderItemDTO{
-			ProductID: item.ProductID,
-			SKU:       item.SKU,
-			Name:      item.Name,
-			UnitPrice: utils.ToAmountString(item.UnitPrice),
-			Quantity:  item.Quantity,
-			LineTotal: utils.ToAmountString(item.LineTotal),
-		})
-	}
-	return dto.OrderDetailDTO{
-		OrderSummaryDTO: orderSummaryResponse(o),
-		Items:           items,
-		Payments:        []any{},
-	}
 }
 
 func parseOptionalTime(value string) (*time.Time, error) {

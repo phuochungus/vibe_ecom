@@ -134,7 +134,7 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div>
               <div className="price" style={{ fontSize: 32, fontWeight: 700 }}>
-                {formatCurrency(product.price)}
+                {formatCurrency(product.price_cents)}
               </div>
             </div>
 

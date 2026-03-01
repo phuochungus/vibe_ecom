@@ -6,6 +6,7 @@ import { useCart } from '@/lib/cart'
 import { ordersApi } from '@/services/orders'
 import { paymentsApi } from '@/services/payments'
 import { getErrorMessage } from '@/lib/api'
+import type { PaymentMethod } from '@/types'
 import AddressForm, { type AddressFormValues } from '@/components/checkout/address-form'
 import OrderReview from '@/components/checkout/order-review'
 
@@ -17,6 +18,7 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [addressForm] = Form.useForm<AddressFormValues>()
   const [addressData, setAddressData] = useState<AddressFormValues | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD')
 
   const shippingFee = 30000
   const total = totalAmount + shippingFee
@@ -32,6 +34,7 @@ export default function CheckoutPage() {
             product_id: item.product_id,
             quantity: item.quantity,
           })),
+          payment_method: paymentMethod,
           shipping_recipient_name: data.recipient_name,
           shipping_phone: data.phone,
           shipping_line1: data.address_line1,
@@ -68,7 +71,7 @@ export default function CheckoutPage() {
         message.error('Vui lòng điền đầy đủ thông tin giao hàng')
       }
     } else if (currentStep === 1) {
-      // Create order and initiate payment
+      // Create order and handle payment based on selected method
       if (!addressData) return
 
       try {
@@ -76,15 +79,21 @@ export default function CheckoutPage() {
 
         const order = await createOrderMutation.mutateAsync(addressData)
 
-        message.loading({ content: 'Đang chuyển đến trang thanh toán...', key: 'checkout' })
-
-        const payment = await initiatePaymentMutation.mutateAsync(order.id)
-
-        // Clear cart before redirecting
+        // Clear cart after order created
         clearCart()
 
-        // Redirect to payment gateway
-        window.location.href = payment.checkout_url
+        if (paymentMethod === 'COD') {
+          message.success({ content: 'Đặt hàng thành công!', key: 'checkout' })
+          navigate(`/checkout/return?orderId=${order.id}&status=COD`)
+        } else {
+          // MOMO: initiate payment and redirect
+          message.loading({ content: 'Đang chuyển đến trang thanh toán...', key: 'checkout' })
+
+          const payment = await initiatePaymentMutation.mutateAsync(order.id)
+
+          // Redirect to payment gateway
+          window.location.href = payment.checkout_url
+        }
       } catch (error) {
         message.error({ content: getErrorMessage(error), key: 'checkout' })
       }
@@ -132,6 +141,8 @@ export default function CheckoutPage() {
               subtotal={totalAmount}
               shippingFee={shippingFee}
               total={total}
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
             />
           )}
         </div>
@@ -148,7 +159,7 @@ export default function CheckoutPage() {
               </Button>
             )}
             <Button type="primary" size="large" onClick={handleNext} loading={isLoading}>
-              {currentStep === 0 ? 'Tiếp tục' : 'Thanh toán'}
+              {currentStep === 0 ? 'Tiếp tục' : paymentMethod === 'COD' ? 'Đặt hàng' : 'Thanh toán'}
             </Button>
           </Space>
         </div>
