@@ -8,7 +8,7 @@ type UserEntity struct {
 	ID                  string               `gorm:"column:id;type:varchar(36);primaryKey"`
 	Email               string               `gorm:"column:email;type:varchar(255);uniqueIndex;not null"`
 	Phone               string               `gorm:"column:phone;type:varchar(20);uniqueIndex;not null"`
-	Password            string               `gorm:"column:password;type:varchar(255);not null"`
+	Password            string               `gorm:"column:password;type:varchar(255);not null" json:"-"`
 	FullName            string               `gorm:"column:full_name;type:varchar(150);not null"`
 	Role                string               `gorm:"column:role;type:enum('USER','ADMIN');not null;default:USER"`
 	Status              string               `gorm:"column:status;type:enum('ACTIVE','LOCKED','DISABLED');not null;default:ACTIVE"`

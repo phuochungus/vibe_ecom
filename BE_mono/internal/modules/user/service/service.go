@@ -13,15 +13,6 @@ func New(repo repository.Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetUserWithPasswordByID(id string) (*db.UserEntity, error) {
-	user, err := s.repo.GetUserWithPasswordByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
 func (s *Service) GetUserByID(id string) (*db.UserEntity, error) {
 	user, err := s.repo.GetUserByID(id)
 	if err != nil {

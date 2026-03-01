@@ -8,7 +8,6 @@ import (
 
 type Repository interface {
 	GetUserByID(id string) (*db.UserEntity, error)
-	GetUserWithPasswordByID(id string) (*db.UserEntity, error)
 }
 
 type GormRepository struct {
@@ -26,13 +25,5 @@ func (r *GormRepository) GetUserByID(id string) (*db.UserEntity, error) {
 		return nil, err
 	}
 	user.Password = "masked" // Mask the password hash before returning
-	return &user, nil
-}
-
-func (r *GormRepository) GetUserWithPasswordByID(id string) (*db.UserEntity, error) {
-	var user db.UserEntity
-	if err := r.db.First(&user, "id = ?", id).Error; err != nil {
-		return nil, err
-	}
 	return &user, nil
 }

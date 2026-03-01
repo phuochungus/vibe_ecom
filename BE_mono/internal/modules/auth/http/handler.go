@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"golf-store/be-mono/internal/modules/auth/dto"
-	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
 	"golf-store/be-mono/internal/shared/response"
 
@@ -50,7 +49,7 @@ func (h *Handler) Login(c *gin.Context) {
 		RefreshToken: result.RefreshToken,
 		TokenType:    result.TokenType,
 		ExpiresIn:    result.ExpiresIn,
-		User:         userResponse(result.User),
+		User:         *result.User,
 	})
 }
 
@@ -96,19 +95,5 @@ func (h *Handler) Me(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, userResponse(freshUser))
-}
-
-func userResponse(u *db.UserEntity) dto.UserDTO {
-	if u == nil {
-		return dto.UserDTO{}
-	}
-	return dto.UserDTO{
-		ID:       u.ID,
-		Role:     u.Role,
-		FullName: u.FullName,
-		Email:    u.Email,
-		Phone:    u.Phone,
-		Status:   u.Status,
-	}
+	response.OK(c, freshUser)
 }

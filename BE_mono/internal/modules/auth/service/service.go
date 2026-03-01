@@ -141,7 +141,7 @@ func (s *Service) Login(identifier string, password string) (*LoginResult, *appe
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
 		ExpiresIn:    int(s.accessTTL.Seconds()),
-		User:         sanitizeUser(userEntity),
+		User:         userEntity,
 	}, nil
 }
 
@@ -187,7 +187,7 @@ func (s *Service) Refresh(refreshToken string) (*LoginResult, *apperrors.APIErro
 		RefreshToken: newRefreshToken,
 		TokenType:    "Bearer",
 		ExpiresIn:    int(s.accessTTL.Seconds()),
-		User:         sanitizeUser(userEntity),
+		User:         userEntity,
 	}, nil
 }
 
@@ -225,7 +225,7 @@ func (s *Service) ResolveAccessToken(token string) (*db.UserEntity, bool) {
 	if userEntity.ID != claims.Subject {
 		return nil, false
 	}
-	return sanitizeUser(userEntity), true
+	return userEntity, true
 }
 
 func (s *Service) Profile(userID string) (*db.UserEntity, bool) {
@@ -233,7 +233,7 @@ func (s *Service) Profile(userID string) (*db.UserEntity, bool) {
 	if err != nil {
 		return nil, false
 	}
-	return sanitizeUser(userEntity), true
+	return userEntity, true
 }
 
 func (s *Service) verifyPassword(user *db.UserEntity, plain string) bool {
@@ -370,23 +370,4 @@ func normalizeToken(token string) string {
 		return strings.TrimSpace(parts[1])
 	}
 	return trimmed
-}
-
-func sanitizeUser(user *db.UserEntity) *db.UserEntity {
-	if user == nil {
-		return nil
-	}
-	copy := *user
-	copy.Password = ""
-	if copy.LockedUntil != nil {
-		t := copy.LockedUntil.UTC()
-		copy.LockedUntil = &t
-	}
-	if copy.LastLoginAt != nil {
-		t := copy.LastLoginAt.UTC()
-		copy.LastLoginAt = &t
-	}
-	copy.CreatedAt = copy.CreatedAt.UTC()
-	copy.UpdatedAt = copy.UpdatedAt.UTC()
-	return &copy
 }

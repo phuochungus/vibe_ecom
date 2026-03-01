@@ -14,7 +14,7 @@ type TokenResolver interface {
 	ResolveAccessToken(token string) (*db.UserEntity, bool)
 }
 
-const contextUserKey = "auth_user"
+const ContextUserKey = "auth_user"
 
 func RequireAuth(resolver TokenResolver) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -32,7 +32,7 @@ func RequireAuth(resolver TokenResolver) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(contextUserKey, user)
+		c.Set(ContextUserKey, user)
 		c.Next()
 	}
 }
@@ -55,7 +55,7 @@ func RequireRole(role string) gin.HandlerFunc {
 }
 
 func UserFromContext(c *gin.Context) *db.UserEntity {
-	v, ok := c.Get(contextUserKey)
+	v, ok := c.Get(ContextUserKey)
 	if !ok {
 		return nil
 	}

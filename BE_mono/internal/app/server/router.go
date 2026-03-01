@@ -14,6 +14,7 @@ import (
 	paymenthttp "golf-store/be-mono/internal/modules/payment/http"
 	producthttp "golf-store/be-mono/internal/modules/product/http"
 	reportinghttp "golf-store/be-mono/internal/modules/reporting/http"
+	userhttp "golf-store/be-mono/internal/modules/user/http"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/platform/observability"
 	"golf-store/be-mono/internal/shared/middleware"
@@ -53,6 +54,7 @@ type RouteModules struct {
 	Payments      *paymenthttp.Handler
 	Notifications *notificationhttp.Handler
 	Reporting     *reportinghttp.Handler
+	Users         *userhttp.Handler
 	AuthResolver  middleware.TokenResolver
 }
 
@@ -78,6 +80,7 @@ func NewRouter(health *HealthHandler, modules RouteModules) *gin.Engine {
 			modules.Orders.RegisterUser(protected)
 			modules.Payments.RegisterUser(protected)
 			modules.Notifications.RegisterUser(protected)
+			modules.Users.Register(protected)
 		}
 
 		admin := protected.Group("/admin")
