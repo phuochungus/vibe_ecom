@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"golf-store/be-mono/internal/modules/product/dto"
 	prodsvc "golf-store/be-mono/internal/modules/product/service"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/response"
@@ -19,17 +20,6 @@ type Handler struct {
 
 func New(products *prodsvc.Service) *Handler {
 	return &Handler{products: products}
-}
-
-type productResponseDTO struct {
-	ID          string `json:"id"`
-	SKU         string `json:"sku"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       string `json:"price"`
-	Stock       int    `json:"stock"`
-	Status      string `json:"status"`
-	ImageURL    string `json:"image_url"`
 }
 
 func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
@@ -63,7 +53,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 		AdminView: false,
 	})
 
-	items := make([]productResponseDTO, 0, len(out.Items))
+	items := make([]dto.ProductResponseDTO, 0, len(out.Items))
 	for _, p := range out.Items {
 		items = append(items, productResponse(p))
 	}
@@ -89,18 +79,8 @@ func (h *Handler) GetProduct(c *gin.Context) {
 	response.OK(c, productResponse(p))
 }
 
-type adminUpsertRequest struct {
-	SKU         string `json:"sku"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       string `json:"price"`
-	Stock       *int   `json:"stock"`
-	Status      string `json:"status"`
-	ImageURL    string `json:"image_url"`
-}
-
 func (h *Handler) AdminCreateProduct(c *gin.Context) {
-	var req adminUpsertRequest
+	var req dto.AdminUpsertRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
@@ -139,7 +119,7 @@ func (h *Handler) AdminCreateProduct(c *gin.Context) {
 
 func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 	productID := c.Param("product_id")
-	var req adminUpsertRequest
+	var req dto.AdminUpsertRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
@@ -195,11 +175,11 @@ func (h *Handler) AdminDeleteProduct(c *gin.Context) {
 	response.NoContent(c)
 }
 
-func productResponse(p *db.ProductEntity) productResponseDTO {
+func productResponse(p *db.ProductEntity) dto.ProductResponseDTO {
 	if p == nil {
-		return productResponseDTO{}
+		return dto.ProductResponseDTO{}
 	}
-	return productResponseDTO{
+	return dto.ProductResponseDTO{
 		ID:          p.ID,
 		SKU:         p.SKU,
 		Name:        p.Name,

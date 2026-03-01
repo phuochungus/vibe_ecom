@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"golf-store/be-mono/internal/modules/reporting/dto"
 	reportsvc "golf-store/be-mono/internal/modules/reporting/service"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
@@ -28,14 +29,14 @@ func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 func (h *Handler) Summary(c *gin.Context) {
 	from, to := parseRange(c)
 	out := h.reporting.Summary(from, to)
-	response.OK(c, gin.H{
-		"from":                 out.From.Format(time.RFC3339Nano),
-		"to":                   out.To.Format(time.RFC3339Nano),
-		"gross_revenue":        utils.ToAmountString(out.GrossRevenue),
-		"refund_amount":        utils.ToAmountString(out.RefundAmount),
-		"net_revenue":          utils.ToAmountString(out.NetRevenue),
-		"completed_orders":     out.CompletedOrders,
-		"payment_success_rate": out.PaymentSuccessRate,
+	response.OK(c, dto.SummaryResponseDTO{
+		From:               out.From.Format(time.RFC3339Nano),
+		To:                 out.To.Format(time.RFC3339Nano),
+		GrossRevenue:       utils.ToAmountString(out.GrossRevenue),
+		RefundAmount:       utils.ToAmountString(out.RefundAmount),
+		NetRevenue:         utils.ToAmountString(out.NetRevenue),
+		CompletedOrders:    out.CompletedOrders,
+		PaymentSuccessRate: out.PaymentSuccessRate,
 	})
 }
 
@@ -45,28 +46,28 @@ func (h *Handler) RevenueOrders(c *gin.Context) {
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
 
 	out := h.reporting.Orders(from, to, page, pageSize)
-	items := make([]gin.H, 0, len(out.Items))
+	items := make([]dto.RevenueOrderItemDTO, 0, len(out.Items))
 	for _, order := range out.Items {
-		items = append(items, gin.H{
-			"id":              order.ID,
-			"order_code":      order.OrderCode,
-			"order_status":    order.OrderStatus,
-			"payment_status":  order.PaymentStatus,
-			"subtotal_amount": utils.ToAmountString(order.SubtotalAmount),
-			"discount_amount": utils.ToAmountString(order.DiscountAmount),
-			"shipping_fee":    utils.ToAmountString(order.ShippingFee),
-			"total_amount":    utils.ToAmountString(order.TotalAmount),
-			"placed_at":       order.PlacedAt.Format(time.RFC3339Nano),
+		items = append(items, dto.RevenueOrderItemDTO{
+			ID:             order.ID,
+			OrderCode:      order.OrderCode,
+			OrderStatus:    order.OrderStatus,
+			PaymentStatus:  order.PaymentStatus,
+			SubtotalAmount: utils.ToAmountString(order.SubtotalAmount),
+			DiscountAmount: utils.ToAmountString(order.DiscountAmount),
+			ShippingFee:    utils.ToAmountString(order.ShippingFee),
+			TotalAmount:    utils.ToAmountString(order.TotalAmount),
+			PlacedAt:       order.PlacedAt.Format(time.RFC3339Nano),
 		})
 	}
 
-	response.OK(c, gin.H{
-		"items": items,
-		"pagination": gin.H{
-			"page":        out.Page,
-			"page_size":   out.PageSize,
-			"total":       out.Total,
-			"total_pages": out.TotalPages,
+	response.OK(c, dto.RevenueOrdersResponseDTO{
+		Items: items,
+		Pagination: dto.PaginationDTO{
+			Page:       out.Page,
+			PageSize:   out.PageSize,
+			Total:      out.Total,
+			TotalPages: out.TotalPages,
 		},
 	})
 }

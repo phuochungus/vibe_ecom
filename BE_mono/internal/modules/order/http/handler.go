@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"golf-store/be-mono/internal/modules/order/dto"
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
@@ -37,63 +38,6 @@ func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 	rg.PATCH("/orders/:order_id/status", h.AdminUpdateOrderStatus)
 }
 
-type createOrderRequest struct {
-	Items []struct {
-		ProductID string `json:"product_id"`
-		Quantity  int    `json:"quantity"`
-	} `json:"items"`
-	ShippingAddress struct {
-		RecipientName  string `json:"recipient_name"`
-		RecipientPhone string `json:"recipient_phone"`
-		Line1          string `json:"line1"`
-		Line2          string `json:"line2"`
-		Ward           string `json:"ward"`
-		District       string `json:"district"`
-		City           string `json:"city"`
-		Province       string `json:"province"`
-		PostalCode     string `json:"postal_code"`
-		CountryCode    string `json:"country_code"`
-	} `json:"shipping_address"`
-	CustomerNote string `json:"customer_note"`
-}
-
-type cancelOrderRequest struct {
-	Reason string `json:"reason"`
-}
-
-type adminUpdateStatusRequest struct {
-	ToStatus string `json:"to_status"`
-	Reason   string `json:"reason"`
-}
-
-type orderSummaryDTO struct {
-	ID             string `json:"id"`
-	OrderCode      string `json:"order_code"`
-	OrderStatus    string `json:"order_status"`
-	PaymentStatus  string `json:"payment_status"`
-	SubtotalAmount string `json:"subtotal_amount"`
-	DiscountAmount string `json:"discount_amount"`
-	ShippingFee    string `json:"shipping_fee"`
-	TotalAmount    string `json:"total_amount"`
-	PlacedAt       string `json:"placed_at"`
-	PaymentDueAt   string `json:"payment_due_at,omitempty"`
-}
-
-type orderItemDTO struct {
-	ProductID string `json:"product_id"`
-	SKU       string `json:"sku"`
-	Name      string `json:"name"`
-	UnitPrice string `json:"unit_price"`
-	Quantity  int    `json:"quantity"`
-	LineTotal string `json:"line_total"`
-}
-
-type orderDetailDTO struct {
-	orderSummaryDTO
-	Items    []orderItemDTO `json:"items"`
-	Payments []any          `json:"payments"`
-}
-
 func (h *Handler) CreateOrder(c *gin.Context) {
 	user := middleware.UserFromContext(c)
 	if user == nil {
@@ -106,7 +50,7 @@ func (h *Handler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	var req createOrderRequest
+	var req dto.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
@@ -165,7 +109,7 @@ func (h *Handler) ListOrders(c *gin.Context) {
 		Admin:    false,
 	})
 
-	items := make([]orderSummaryDTO, 0, len(out.Items))
+	items := make([]dto.OrderSummaryDTO, 0, len(out.Items))
 	for _, o := range out.Items {
 		items = append(items, orderSummaryResponse(o))
 	}
@@ -193,7 +137,7 @@ func (h *Handler) GetOrder(c *gin.Context) {
 
 func (h *Handler) CancelOrder(c *gin.Context) {
 	user := middleware.UserFromContext(c)
-	var req cancelOrderRequest
+	var req dto.CancelOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
@@ -249,7 +193,7 @@ func (h *Handler) AdminListOrders(c *gin.Context) {
 		Admin:    true,
 	})
 
-	items := make([]orderSummaryDTO, 0, len(out.Items))
+	items := make([]dto.OrderSummaryDTO, 0, len(out.Items))
 	for _, o := range out.Items {
 		items = append(items, orderSummaryResponse(o))
 	}
@@ -275,7 +219,7 @@ func (h *Handler) AdminGetOrder(c *gin.Context) {
 }
 
 func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
-	var req adminUpdateStatusRequest
+	var req dto.AdminUpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
@@ -294,11 +238,11 @@ func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
 	response.OK(c, orderSummaryResponse(order))
 }
 
-func orderSummaryResponse(o *db.OrderEntity) orderSummaryDTO {
+func orderSummaryResponse(o *db.OrderEntity) dto.OrderSummaryDTO {
 	if o == nil {
-		return orderSummaryDTO{}
+		return dto.OrderSummaryDTO{}
 	}
-	result := orderSummaryDTO{
+	result := dto.OrderSummaryDTO{
 		ID:             o.ID,
 		OrderCode:      o.OrderCode,
 		OrderStatus:    o.OrderStatus,
@@ -315,13 +259,13 @@ func orderSummaryResponse(o *db.OrderEntity) orderSummaryDTO {
 	return result
 }
 
-func orderDetailResponse(o *db.OrderEntity) orderDetailDTO {
+func orderDetailResponse(o *db.OrderEntity) dto.OrderDetailDTO {
 	if o == nil || o.Items == nil {
-		return orderDetailDTO{}
+		return dto.OrderDetailDTO{}
 	}
-	items := make([]orderItemDTO, 0, len(o.Items))
+	items := make([]dto.OrderItemDTO, 0, len(o.Items))
 	for _, item := range o.Items {
-		items = append(items, orderItemDTO{
+		items = append(items, dto.OrderItemDTO{
 			ProductID: item.ProductID,
 			SKU:       item.SKU,
 			Name:      item.Name,
@@ -330,8 +274,8 @@ func orderDetailResponse(o *db.OrderEntity) orderDetailDTO {
 			LineTotal: utils.ToAmountString(item.LineTotal),
 		})
 	}
-	return orderDetailDTO{
-		orderSummaryDTO: orderSummaryResponse(o),
+	return dto.OrderDetailDTO{
+		OrderSummaryDTO: orderSummaryResponse(o),
 		Items:           items,
 		Payments:        []any{},
 	}

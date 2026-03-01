@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"golf-store/be-mono/internal/modules/payment/dto"
 	paysvc "golf-store/be-mono/internal/modules/payment/service"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
@@ -31,29 +32,6 @@ func (h *Handler) RegisterWebhook(rg *gin.RouterGroup) {
 	rg.POST("/webhooks/payments/:provider", h.ReceivePaymentWebhook)
 }
 
-type createPaymentRequest struct {
-	Provider  string `json:"provider"`
-	ReturnURL string `json:"return_url"`
-	CancelURL string `json:"cancel_url"`
-}
-
-type createPaymentResponseDTO struct {
-	PaymentID   string `json:"payment_id"`
-	Status      string `json:"status"`
-	CheckoutURL string `json:"checkout_url"`
-}
-
-type paymentItemDTO struct {
-	ID              string `json:"id"`
-	TxnType         string `json:"txn_type"`
-	Provider        string `json:"provider"`
-	ProviderTxnCode string `json:"provider_txn_code,omitempty"`
-	Status          string `json:"status"`
-	Amount          string `json:"amount"`
-	CurrencyCode    string `json:"currency_code"`
-	CreatedAt       string `json:"created_at"`
-}
-
 func (h *Handler) CreatePayment(c *gin.Context) {
 	user := middleware.UserFromContext(c)
 	if user == nil {
@@ -66,7 +44,7 @@ func (h *Handler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	var req createPaymentRequest
+	var req dto.CreatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
@@ -85,7 +63,7 @@ func (h *Handler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, createPaymentResponseDTO{
+	response.Created(c, dto.CreatePaymentResponseDTO{
 		PaymentID:   output.PaymentID,
 		Status:      output.Status,
 		CheckoutURL: output.CheckoutURL,
@@ -105,7 +83,7 @@ func (h *Handler) ListPayments(c *gin.Context) {
 		return
 	}
 
-	items := make([]paymentItemDTO, 0, len(list))
+	items := make([]dto.PaymentItemDTO, 0, len(list))
 	for _, p := range list {
 		items = append(items, paymentResponse(p))
 	}
@@ -130,11 +108,11 @@ func (h *Handler) ReceivePaymentWebhook(c *gin.Context) {
 	response.Accepted(c, result)
 }
 
-func paymentResponse(p *db.PaymentTransactionEntity) paymentItemDTO {
+func paymentResponse(p *db.PaymentTransactionEntity) dto.PaymentItemDTO {
 	if p == nil {
-		return paymentItemDTO{}
+		return dto.PaymentItemDTO{}
 	}
-	resp := paymentItemDTO{
+	resp := dto.PaymentItemDTO{
 		ID:           p.ID,
 		TxnType:      p.TxnType,
 		Provider:     p.Provider,

@@ -6,51 +6,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	authsvc "golf-store/be-mono/internal/modules/auth/service"
+	"golf-store/be-mono/internal/modules/auth/dto"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
 	"golf-store/be-mono/internal/shared/response"
+
+	authsvc "golf-store/be-mono/internal/modules/auth/service"
 )
 
 type Handler struct {
-	auth *authsvc.Service
+	authsvc *authsvc.Service
 }
 
 func New(auth *authsvc.Service) *Handler {
-	return &Handler{auth: auth}
-}
-
-type loginRequest struct {
-	Identifier string `json:"identifier"`
-	Password   string `json:"password"`
-}
-
-type refreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
-type userDTO struct {
-	ID       string `json:"id"`
-	Role     string `json:"role"`
-	FullName string `json:"full_name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Status   string `json:"status"`
-}
-
-type loginResponseDTO struct {
-	AccessToken  string  `json:"access_token"`
-	RefreshToken string  `json:"refresh_token"`
-	TokenType    string  `json:"token_type"`
-	ExpiresIn    int     `json:"expires_in"`
-	User         userDTO `json:"user"`
-}
-
-type refreshResponseDTO struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int    `json:"expires_in"`
+	return &Handler{authsvc: auth}
 }
 
 func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
@@ -64,19 +33,19 @@ func (h *Handler) RegisterProtected(rg *gin.RouterGroup) {
 }
 
 func (h *Handler) Login(c *gin.Context) {
-	var req loginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
 	}
 
-	result, apiErr := h.auth.Login(req.Identifier, req.Password)
+	result, apiErr := h.authsvc.Login(req.Identifier, req.Password)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
 
-	response.OK(c, loginResponseDTO{
+	response.OK(c, dto.LoginResponseDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 		TokenType:    result.TokenType,
@@ -86,19 +55,19 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) RefreshToken(c *gin.Context) {
-	var req refreshTokenRequest
+	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
 		return
 	}
 
-	result, apiErr := h.auth.Refresh(req.RefreshToken)
+	result, apiErr := h.authsvc.Refresh(req.RefreshToken)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
 
-	response.OK(c, refreshResponseDTO{
+	response.OK(c, dto.RefreshResponseDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 		TokenType:    result.TokenType,
@@ -110,7 +79,7 @@ func (h *Handler) Logout(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer"))
 	token = strings.TrimSpace(token)
-	h.auth.Logout(token)
+	h.authsvc.Logout(token)
 	response.NoContent(c)
 }
 
@@ -121,7 +90,7 @@ func (h *Handler) Me(c *gin.Context) {
 		return
 	}
 
-	freshUser, ok := h.auth.Profile(user.ID)
+	freshUser, ok := h.authsvc.Profile(user.ID)
 	if !ok {
 		response.Error(c, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized", nil)
 		return
@@ -130,11 +99,11 @@ func (h *Handler) Me(c *gin.Context) {
 	response.OK(c, userResponse(freshUser))
 }
 
-func userResponse(u *db.UserEntity) userDTO {
+func userResponse(u *db.UserEntity) dto.UserDTO {
 	if u == nil {
-		return userDTO{}
+		return dto.UserDTO{}
 	}
-	return userDTO{
+	return dto.UserDTO{
 		ID:       u.ID,
 		Role:     u.Role,
 		FullName: u.FullName,

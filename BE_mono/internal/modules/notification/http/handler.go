@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"golf-store/be-mono/internal/modules/notification/dto"
 	notisvc "golf-store/be-mono/internal/modules/notification/service"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/shared/middleware"
@@ -28,19 +29,6 @@ func (h *Handler) RegisterUser(rg *gin.RouterGroup) {
 	rg.PATCH("/notifications/read-all", h.MarkReadAll)
 }
 
-type notificationResponseDTO struct {
-	ID        string `json:"id"`
-	Channel   string `json:"channel"`
-	EventType string `json:"event_type"`
-	EventKey  string `json:"event_key"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	Status    string `json:"status"`
-	Read      bool   `json:"read"`
-	CreatedAt string `json:"created_at"`
-	SentAt    string `json:"sent_at,omitempty"`
-}
-
 func (h *Handler) ListNotifications(c *gin.Context) {
 	user := middleware.UserFromContext(c)
 	if user == nil {
@@ -55,7 +43,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 		PageSize: parseIntDefault(c.Query("page_size"), 20),
 	})
 
-	items := make([]notificationResponseDTO, 0, len(out.Items))
+	items := make([]dto.NotificationResponseDTO, 0, len(out.Items))
 	for _, n := range out.Items {
 		items = append(items, notificationResponse(n))
 	}
@@ -87,11 +75,11 @@ func (h *Handler) MarkReadAll(c *gin.Context) {
 	response.OK(c, gin.H{"updated_count": count})
 }
 
-func notificationResponse(n *db.NotificationEntity) notificationResponseDTO {
+func notificationResponse(n *db.NotificationEntity) dto.NotificationResponseDTO {
 	if n == nil {
-		return notificationResponseDTO{}
+		return dto.NotificationResponseDTO{}
 	}
-	resp := notificationResponseDTO{
+	resp := dto.NotificationResponseDTO{
 		ID:        n.ID,
 		Channel:   n.Channel,
 		EventType: n.EventType,
