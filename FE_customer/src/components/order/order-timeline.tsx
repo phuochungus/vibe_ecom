@@ -1,0 +1,49 @@
+import { Timeline, Typography } from 'antd'
+import { CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import type { OrderStatusHistory } from '@/types'
+import { formatOrderStatus } from '@/lib/utils'
+import { formatDateTime } from '@/lib/utils'
+
+const { Text } = Typography
+
+interface OrderTimelineProps {
+  history: OrderStatusHistory[]
+}
+
+export default function OrderTimeline({ history }: OrderTimelineProps) {
+  const sortedHistory = [...history].sort(
+    (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+  )
+
+  return (
+    <Timeline
+      items={sortedHistory.map((event, index) => ({
+        dot: index === 0 ? <CheckCircleOutlined style={{ fontSize: 16 }} /> : <ClockCircleOutlined />,
+        color: index === 0 ? 'green' : 'gray',
+        children: (
+          <div>
+            <div style={{ fontWeight: 500 }}>
+              {event.from_status && `${formatOrderStatus(event.from_status)} → `}
+              {formatOrderStatus(event.to_status)}
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {formatDateTime(event.occurred_at)}
+            </Text>
+            {event.change_reason && (
+              <div style={{ marginTop: 4 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Lý do: {event.change_reason}
+                </Text>
+              </div>
+            )}
+            <div style={{ marginTop: 4 }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Bởi: {event.changed_by_type}
+              </Text>
+            </div>
+          </div>
+        ),
+      }))}
+    />
+  )
+}
