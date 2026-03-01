@@ -1,6 +1,6 @@
 package dto
 
-import "golf-store/be-mono/internal/platform/db"
+import entities "golf-store/be-mono/internal/platform/entities"
 
 type LoginRequest struct {
 	Identifier string `json:"identifier"`
@@ -16,7 +16,7 @@ type LoginResponseDTO struct {
 	RefreshToken string        `json:"refresh_token"`
 	TokenType    string        `json:"token_type"`
 	ExpiresIn    int           `json:"expires_in"`
-	User         db.UserEntity `json:"user"`
+	User         entities.User `json:"user"`
 }
 
 type RefreshResponseDTO struct {

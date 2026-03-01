@@ -12,6 +12,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/order/repository"
 	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
@@ -60,14 +61,14 @@ type ListInput struct {
 }
 
 type ListOutput struct {
-	Items      []*db.OrderEntity
+	Items      []*entities.Order
 	Page       int
 	PageSize   int
 	Total      int
 	TotalPages int
 }
 
-func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.APIError) {
+func (s *Service) Create(input CreateOrderInput) (*entities.Order, *apperrors.APIError) {
 	idemKey := strings.TrimSpace(input.IdempotencyKey)
 	if idemKey == "" {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "Idempotency-Key is required"}
@@ -99,7 +100,7 @@ func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.AP
 		return nil, &apperrors.APIError{Status: http.StatusUnauthorized, Code: "UNAUTHORIZED", Message: "Unauthorized"}
 	}
 
-	orderItems := make([]db.OrderItemEntity, 0, len(input.Items))
+	orderItems := make([]entities.OrderItem, 0, len(input.Items))
 	var subtotal int64
 	productUpdates := make(map[string]int)
 
@@ -127,7 +128,7 @@ func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.AP
 
 		lineTotal := product.Price * int64(item.Quantity)
 		subtotal += lineTotal
-		orderItems = append(orderItems, db.OrderItemEntity{
+		orderItems = append(orderItems, entities.OrderItem{
 			ID:        uuid.NewString(),
 			OrderID:   orderID,
 			ProductID: product.ID,
@@ -146,7 +147,7 @@ func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.AP
 	totalAmount := subtotal + shippingFee - discountAmount
 	dueAt := now.Add(30 * time.Minute)
 
-	order := db.OrderEntity{
+	order := entities.Order{
 		ID:                    orderID,
 		OrderCode:             orderCode,
 		IdempotencyKey:        idemKey,
@@ -175,7 +176,7 @@ func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.AP
 		UpdatedAt:             now,
 	}
 
-	tracking := &db.OrderTrackingEventEntity{
+	tracking := &entities.OrderTrackingEvent{
 		ID:          uuid.NewString(),
 		OrderID:     orderID,
 		FromStatus:  stringPtrOrNil(db.OrderStatusNew),
@@ -185,7 +186,7 @@ func (s *Service) Create(input CreateOrderInput) (*db.OrderEntity, *apperrors.AP
 		OccurredAt:  now,
 	}
 
-	notification := &db.NotificationEntity{
+	notification := &entities.Notification{
 		ID:        uuid.NewString(),
 		UserID:    input.UserID,
 		Channel:   "IN_APP",
@@ -229,10 +230,10 @@ func (s *Service) List(input ListInput) ListOutput {
 		Admin:    input.Admin,
 	}
 
-	entities, total, err := s.repo.List(filter)
+	rows, total, err := s.repo.List(filter)
 	if err != nil {
 		return ListOutput{
-			Items:      []*db.OrderEntity{},
+			Items:      []*entities.Order{},
 			Page:       input.Page,
 			PageSize:   input.PageSize,
 			Total:      0,
@@ -240,9 +241,9 @@ func (s *Service) List(input ListInput) ListOutput {
 		}
 	}
 
-	items := make([]*db.OrderEntity, 0, len(entities))
-	for i := range entities {
-		items = append(items, cloneOrder(&entities[i]))
+	items := make([]*entities.Order, 0, len(rows))
+	for i := range rows {
+		items = append(items, cloneOrder(&rows[i]))
 	}
 
 	return ListOutput{
@@ -254,7 +255,7 @@ func (s *Service) List(input ListInput) ListOutput {
 	}
 }
 
-func (s *Service) GetByIDForUser(orderID string, userID string) (*db.OrderEntity, *apperrors.APIError) {
+func (s *Service) GetByIDForUser(orderID string, userID string) (*entities.Order, *apperrors.APIError) {
 	order, err := s.getOrder(orderID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, apperrors.ErrNotFound
@@ -268,7 +269,7 @@ func (s *Service) GetByIDForUser(orderID string, userID string) (*db.OrderEntity
 	return order, nil
 }
 
-func (s *Service) GetByIDAdmin(orderID string) (*db.OrderEntity, *apperrors.APIError) {
+func (s *Service) GetByIDAdmin(orderID string) (*entities.Order, *apperrors.APIError) {
 	order, err := s.getOrder(orderID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, apperrors.ErrNotFound
@@ -279,7 +280,7 @@ func (s *Service) GetByIDAdmin(orderID string) (*db.OrderEntity, *apperrors.APIE
 	return order, nil
 }
 
-func (s *Service) CancelByUser(orderID string, userID string, reason string) (*db.OrderEntity, *apperrors.APIError) {
+func (s *Service) CancelByUser(orderID string, userID string, reason string) (*entities.Order, *apperrors.APIError) {
 	now := time.Now().UTC()
 
 	updates := map[string]any{
@@ -292,7 +293,7 @@ func (s *Service) CancelByUser(orderID string, userID string, reason string) (*d
 		updates["cancel_reason"] = nil
 	}
 
-	tracking := &db.OrderTrackingEventEntity{
+	tracking := &entities.OrderTrackingEvent{
 		ID:          uuid.NewString(),
 		OrderID:     orderID,
 		ToStatus:    db.OrderStatusCancelled,
@@ -301,7 +302,7 @@ func (s *Service) CancelByUser(orderID string, userID string, reason string) (*d
 		OccurredAt:  now,
 	}
 
-	notification := &db.NotificationEntity{
+	notification := &entities.Notification{
 		ID:        uuid.NewString(),
 		UserID:    userID,
 		Channel:   "IN_APP",
@@ -333,7 +334,7 @@ func (s *Service) CancelByUser(orderID string, userID string, reason string) (*d
 	return s.GetByIDForUser(orderID, userID)
 }
 
-func (s *Service) TrackingForUser(orderID string, userID string) ([]db.OrderTrackingEventEntity, string, *apperrors.APIError) {
+func (s *Service) TrackingForUser(orderID string, userID string) ([]entities.OrderTrackingEvent, string, *apperrors.APIError) {
 	order, err := s.repo.FindByID(orderID)
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") {
@@ -352,7 +353,7 @@ func (s *Service) TrackingForUser(orderID string, userID string) ([]db.OrderTrac
 	return events, order.OrderStatus, nil
 }
 
-func (s *Service) TrackingForAdmin(orderID string) ([]db.OrderTrackingEventEntity, string, *apperrors.APIError) {
+func (s *Service) TrackingForAdmin(orderID string) ([]entities.OrderTrackingEvent, string, *apperrors.APIError) {
 	order, err := s.repo.FindByID(orderID)
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") {
@@ -368,7 +369,7 @@ func (s *Service) TrackingForAdmin(orderID string) ([]db.OrderTrackingEventEntit
 	return events, order.OrderStatus, nil
 }
 
-func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason string) (*db.OrderEntity, *apperrors.APIError) {
+func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason string) (*entities.Order, *apperrors.APIError) {
 	if toStatus == "" {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "to_status is required"}
 	}
@@ -391,7 +392,7 @@ func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason stri
 		updates["payment_status"] = db.PaymentStatusPaid
 	}
 
-	tracking := &db.OrderTrackingEventEntity{
+	tracking := &entities.OrderTrackingEvent{
 		ID:          uuid.NewString(),
 		OrderID:     orderID,
 		ToStatus:    toStatus,
@@ -400,7 +401,7 @@ func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason stri
 		OccurredAt:  now,
 	}
 
-	notification := &db.NotificationEntity{
+	notification := &entities.Notification{
 		ID:        uuid.NewString(),
 		UserID:    order.UserID,
 		Channel:   "IN_APP",
@@ -426,7 +427,7 @@ func (s *Service) AdminUpdateStatus(orderID string, toStatus string, reason stri
 	return s.GetByIDAdmin(orderID)
 }
 
-func (s *Service) MarkPaymentResult(orderID string, success bool, reason string) (*db.OrderEntity, *apperrors.APIError) {
+func (s *Service) MarkPaymentResult(orderID string, success bool, reason string) (*entities.Order, *apperrors.APIError) {
 	now := time.Now().UTC()
 
 	order, err := s.repo.FindByID(orderID)
@@ -440,9 +441,9 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 	updates := map[string]any{
 		"updated_at": now,
 	}
-	var tracking *db.OrderTrackingEventEntity
+	var tracking *entities.OrderTrackingEvent
 
-	notification := &db.NotificationEntity{
+	notification := &entities.Notification{
 		ID:        uuid.NewString(),
 		UserID:    order.UserID,
 		Channel:   "IN_APP",
@@ -458,7 +459,7 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 		if order.OrderStatus == db.OrderStatusPendingPayment {
 			updates["order_status"] = db.OrderStatusPaid
 
-			tracking = &db.OrderTrackingEventEntity{
+			tracking = &entities.OrderTrackingEvent{
 				ID:          uuid.NewString(),
 				OrderID:     orderID,
 				ToStatus:    db.OrderStatusPaid,
@@ -489,7 +490,7 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 	return s.GetByIDAdmin(orderID)
 }
 
-func (s *Service) getOrder(orderID string) (*db.OrderEntity, error) {
+func (s *Service) getOrder(orderID string) (*entities.Order, error) {
 	return s.repo.FindByID(orderID)
 }
 
@@ -524,7 +525,7 @@ func calcTotalPages(total int, pageSize int) int {
 	return (total + pageSize - 1) / pageSize
 }
 
-func cloneOrder(entity *db.OrderEntity) *db.OrderEntity {
+func cloneOrder(entity *entities.Order) *entities.Order {
 	if entity == nil {
 		return nil
 	}
@@ -539,7 +540,7 @@ func cloneOrder(entity *db.OrderEntity) *db.OrderEntity {
 	return &copy
 }
 
-func cloneOrderItem(entity *db.OrderItemEntity) *db.OrderItemEntity {
+func cloneOrderItem(entity *entities.OrderItem) *entities.OrderItem {
 	if entity == nil {
 		return nil
 	}
@@ -549,7 +550,7 @@ func cloneOrderItem(entity *db.OrderItemEntity) *db.OrderItemEntity {
 	return &copy
 }
 
-func cloneTracking(entity *db.OrderTrackingEventEntity) *db.OrderTrackingEventEntity {
+func cloneTracking(entity *entities.OrderTrackingEvent) *entities.OrderTrackingEvent {
 	if entity == nil {
 		return nil
 	}

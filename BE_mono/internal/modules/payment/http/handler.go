@@ -9,7 +9,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/payment/dto"
 	paysvc "golf-store/be-mono/internal/modules/payment/service"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	"golf-store/be-mono/internal/shared/middleware"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
@@ -108,7 +108,7 @@ func (h *Handler) ReceivePaymentWebhook(c *gin.Context) {
 	response.Accepted(c, result)
 }
 
-func paymentResponse(p *db.PaymentTransactionEntity) dto.PaymentItemDTO {
+func paymentResponse(p *entities.PaymentTransaction) dto.PaymentItemDTO {
 	if p == nil {
 		return dto.PaymentItemDTO{}
 	}

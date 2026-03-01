@@ -44,12 +44,17 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	user := dto.LoginResponseDTO{}.User
+	if result.User != nil {
+		user = *result.User
+	}
+
 	response.OK(c, dto.LoginResponseDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 		TokenType:    result.TokenType,
 		ExpiresIn:    result.ExpiresIn,
-		User:         *result.User,
+		User:         user,
 	})
 }
 

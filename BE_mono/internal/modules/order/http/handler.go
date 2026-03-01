@@ -10,7 +10,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/order/dto"
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	"golf-store/be-mono/internal/shared/middleware"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
@@ -238,7 +238,7 @@ func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
 	response.OK(c, orderSummaryResponse(order))
 }
 
-func orderSummaryResponse(o *db.OrderEntity) dto.OrderSummaryDTO {
+func orderSummaryResponse(o *entities.Order) dto.OrderSummaryDTO {
 	if o == nil {
 		return dto.OrderSummaryDTO{}
 	}
@@ -259,7 +259,7 @@ func orderSummaryResponse(o *db.OrderEntity) dto.OrderSummaryDTO {
 	return result
 }
 
-func orderDetailResponse(o *db.OrderEntity) dto.OrderDetailDTO {
+func orderDetailResponse(o *entities.Order) dto.OrderDetailDTO {
 	if o == nil || o.Items == nil {
 		return dto.OrderDetailDTO{}
 	}

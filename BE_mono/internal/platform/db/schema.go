@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 func InitSchema(gdb *gorm.DB) error {
@@ -17,18 +19,18 @@ func InitSchema(gdb *gorm.DB) error {
 	}
 
 	return gdb.AutoMigrate(
-		&UserEntity{},
-		&AuthTokenEntity{},
-		&UserAddressEntity{},
-		&ProductEntity{},
-		&OrderEntity{},
-		&OrderItemEntity{},
-		&OrderStatusHistoryEntity{},
-		&OrderTrackingEventEntity{},
-		&ShipmentTrackingEventEntity{},
-		&PaymentTransactionEntity{},
-		&NotificationEntity{},
-		&AuditLogEntity{},
+		&entities.User{},
+		&entities.AuthToken{},
+		&entities.UserAddress{},
+		&entities.Product{},
+		&entities.Order{},
+		&entities.OrderItem{},
+		&entities.OrderStatusHistory{},
+		&entities.OrderTrackingEvent{},
+		&entities.ShipmentTrackingEvent{},
+		&entities.PaymentTransaction{},
+		&entities.Notification{},
+		&entities.AuditLog{},
 	)
 }
 
@@ -64,11 +66,11 @@ func SeedDemoData(gdb *gorm.DB) error {
 		}
 
 		var productCount int64
-		if err := tx.Model(&ProductEntity{}).Count(&productCount).Error; err != nil {
+		if err := tx.Model(&entities.Product{}).Count(&productCount).Error; err != nil {
 			return err
 		}
 		if productCount == 0 {
-			products := []ProductEntity{
+			products := []entities.Product{
 				{
 					ID:          uuid.NewString(),
 					SKU:         "GLF-DRIVER-001",
@@ -126,7 +128,7 @@ type seedUserInput struct {
 }
 
 func ensureSeedUser(tx *gorm.DB, input seedUserInput) error {
-	var user UserEntity
+	var user entities.User
 	err := tx.Where("email = ?", strings.TrimSpace(input.Email)).Take(&user).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -136,7 +138,7 @@ func ensureSeedUser(tx *gorm.DB, input seedUserInput) error {
 		if hashErr != nil {
 			return hashErr
 		}
-		return tx.Create(&UserEntity{
+		return tx.Create(&entities.User{
 			ID:                  uuid.NewString(),
 			Email:               strings.TrimSpace(input.Email),
 			Phone:               strings.TrimSpace(input.Phone),
@@ -165,7 +167,7 @@ func ensureSeedUser(tx *gorm.DB, input seedUserInput) error {
 		updates["password"] = string(hashed)
 	}
 
-	return tx.Model(&UserEntity{}).Where("id = ?", user.ID).Updates(updates).Error
+	return tx.Model(&entities.User{}).Where("id = ?", user.ID).Updates(updates).Error
 }
 
 func looksLikeBcrypt(hash string) bool {

@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 
 	"golf-store/be-mono/internal/modules/auth/repository"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
@@ -80,7 +80,7 @@ type LoginResult struct {
 	RefreshToken string
 	TokenType    string
 	ExpiresIn    int
-	User         *db.UserEntity
+	User         *entities.User
 }
 
 func (s *Service) Login(identifier string, password string) (*LoginResult, *apperrors.APIError) {
@@ -120,7 +120,7 @@ func (s *Service) Login(identifier string, password string) (*LoginResult, *appe
 	}
 	expiresAt := now.Add(s.refreshTTL)
 
-	newToken := &db.AuthTokenEntity{
+	newToken := &entities.AuthToken{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		UserID:       userEntity.ID,
@@ -171,7 +171,7 @@ func (s *Service) Refresh(refreshToken string) (*LoginResult, *apperrors.APIErro
 	}
 	expiresAt := now.Add(s.refreshTTL)
 
-	newToken := &db.AuthTokenEntity{
+	newToken := &entities.AuthToken{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
 		UserID:       userEntity.ID,
@@ -210,7 +210,7 @@ func (s *Service) Logout(token string) {
 	}
 }
 
-func (s *Service) ResolveAccessToken(token string) (*db.UserEntity, bool) {
+func (s *Service) ResolveAccessToken(token string) (*entities.User, bool) {
 	t := normalizeToken(token)
 	claims, err := s.parseAndValidateJWT(t, tokenTypeAccess)
 	if err != nil || strings.TrimSpace(claims.Subject) == "" {
@@ -228,7 +228,7 @@ func (s *Service) ResolveAccessToken(token string) (*db.UserEntity, bool) {
 	return userEntity, true
 }
 
-func (s *Service) Profile(userID string) (*db.UserEntity, bool) {
+func (s *Service) Profile(userID string) (*entities.User, bool) {
 	userEntity, err := s.repo.FindUserByID(userID)
 	if err != nil {
 		return nil, false
@@ -236,7 +236,7 @@ func (s *Service) Profile(userID string) (*db.UserEntity, bool) {
 	return userEntity, true
 }
 
-func (s *Service) verifyPassword(user *db.UserEntity, plain string) bool {
+func (s *Service) verifyPassword(user *entities.User, plain string) bool {
 	if user == nil {
 		return false
 	}
@@ -249,16 +249,16 @@ func (s *Service) verifyPassword(user *db.UserEntity, plain string) bool {
 	return false
 }
 
-func (s *Service) findUserByIdentifier(identifier string) (*db.UserEntity, error) {
+func (s *Service) findUserByIdentifier(identifier string) (*entities.User, error) {
 	lookup := strings.TrimSpace(identifier)
 	return s.repo.FindUserByIdentifier(lookup)
 }
 
-func (s *Service) findUserByRefreshToken(refreshToken string, userID string, now time.Time) (*db.UserEntity, error) {
+func (s *Service) findUserByRefreshToken(refreshToken string, userID string, now time.Time) (*entities.User, error) {
 	return s.repo.FindUserByRefreshToken(refreshToken, userID, now)
 }
 
-func (s *Service) signToken(user *db.UserEntity, tokenType string, now time.Time, ttl time.Duration) (string, error) {
+func (s *Service) signToken(user *entities.User, tokenType string, now time.Time, ttl time.Duration) (string, error) {
 	headerJSON, err := json.Marshal(map[string]string{
 		"alg": "HS256",
 		"typ": "JWT",

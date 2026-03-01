@@ -1,13 +1,13 @@
 package repository
 
 import (
-	db "golf-store/be-mono/internal/platform/db"
-
 	"gorm.io/gorm"
+
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type Repository interface {
-	GetUserByID(id string) (*db.UserEntity, error)
+	GetUserByID(id string) (*entities.User, error)
 }
 
 type GormRepository struct {
@@ -18,8 +18,8 @@ func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) GetUserByID(id string) (*db.UserEntity, error) {
-	var user db.UserEntity
+func (r *GormRepository) GetUserByID(id string) (*entities.User, error) {
+	var user entities.User
 	// Exclude password_hash for security reasons
 	if err := r.db.First(&user, "id = ?", id).Error; err != nil {
 		return nil, err

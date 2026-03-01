@@ -5,7 +5,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type ListFilter struct {
@@ -16,10 +16,10 @@ type ListFilter struct {
 }
 
 type Repository interface {
-	List(filter ListFilter) ([]db.NotificationEntity, int64, error)
+	List(filter ListFilter) ([]*entities.Notification, int64, error)
 	MarkRead(userID string, notificationID string) (int64, error)
 	MarkReadAll(userID string) (int64, error)
-	FindByID(notificationID string) (*db.NotificationEntity, error)
+	FindByID(notificationID string) (*entities.Notification, error)
 }
 
 type GormRepository struct {
@@ -30,8 +30,8 @@ func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) List(filter ListFilter) ([]db.NotificationEntity, int64, error) {
-	query := r.db.Model(&db.NotificationEntity{}).Where("user_id = ?", filter.UserID)
+func (r *GormRepository) List(filter ListFilter) ([]*entities.Notification, int64, error) {
+	query := r.db.Model(&entities.Notification{}).Where("user_id = ?", filter.UserID)
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
 	}
@@ -42,16 +42,16 @@ func (r *GormRepository) List(filter ListFilter) ([]db.NotificationEntity, int64
 	}
 
 	offset := (filter.Page - 1) * filter.PageSize
-	entities := make([]db.NotificationEntity, 0)
-	if err := query.Order("created_at DESC").Limit(filter.PageSize).Offset(offset).Find(&entities).Error; err != nil {
+	rows := make([]*entities.Notification, 0)
+	if err := query.Order("created_at DESC").Limit(filter.PageSize).Offset(offset).Find(&rows).Error; err != nil {
 		return nil, total, err
 	}
 
-	return entities, total, nil
+	return rows, total, nil
 }
 
 func (r *GormRepository) MarkRead(userID string, notificationID string) (int64, error) {
-	res := r.db.Model(&db.NotificationEntity{}).
+	res := r.db.Model(&entities.Notification{}).
 		Where("id = ? AND user_id = ?", notificationID, userID).
 		Updates(map[string]any{
 			"is_read":    true,
@@ -61,7 +61,7 @@ func (r *GormRepository) MarkRead(userID string, notificationID string) (int64, 
 }
 
 func (r *GormRepository) MarkReadAll(userID string) (int64, error) {
-	res := r.db.Model(&db.NotificationEntity{}).
+	res := r.db.Model(&entities.Notification{}).
 		Where("user_id = ? AND is_read = ?", userID, false).
 		Updates(map[string]any{
 			"is_read":    true,
@@ -70,8 +70,8 @@ func (r *GormRepository) MarkReadAll(userID string) (int64, error) {
 	return res.RowsAffected, res.Error
 }
 
-func (r *GormRepository) FindByID(notificationID string) (*db.NotificationEntity, error) {
-	var entity db.NotificationEntity
+func (r *GormRepository) FindByID(notificationID string) (*entities.Notification, error) {
+	var entity entities.Notification
 	err := r.db.Where("id = ?", notificationID).Take(&entity).Error
 	return &entity, err
 }

@@ -7,11 +7,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type TokenResolver interface {
-	ResolveAccessToken(token string) (*db.UserEntity, bool)
+	ResolveAccessToken(token string) (*entities.User, bool)
 }
 
 const ContextUserKey = "auth_user"
@@ -54,13 +54,13 @@ func RequireRole(role string) gin.HandlerFunc {
 	}
 }
 
-func UserFromContext(c *gin.Context) *db.UserEntity {
+func UserFromContext(c *gin.Context) *entities.User {
 	v, ok := c.Get(ContextUserKey)
 	if !ok {
 		return nil
 	}
 
-	user, ok := v.(*db.UserEntity)
+	user, ok := v.(*entities.User)
 	if !ok {
 		return nil
 	}

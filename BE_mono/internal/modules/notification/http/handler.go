@@ -10,7 +10,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/notification/dto"
 	notisvc "golf-store/be-mono/internal/modules/notification/service"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	"golf-store/be-mono/internal/shared/middleware"
 	"golf-store/be-mono/internal/shared/response"
 )
@@ -75,7 +75,7 @@ func (h *Handler) MarkReadAll(c *gin.Context) {
 	response.OK(c, gin.H{"updated_count": count})
 }
 
-func notificationResponse(n *db.NotificationEntity) dto.NotificationResponseDTO {
+func notificationResponse(n *entities.Notification) dto.NotificationResponseDTO {
 	if n == nil {
 		return dto.NotificationResponseDTO{}
 	}

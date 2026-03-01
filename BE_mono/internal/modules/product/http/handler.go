@@ -9,7 +9,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/product/dto"
 	prodsvc "golf-store/be-mono/internal/modules/product/service"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	"golf-store/be-mono/internal/shared/response"
 	"golf-store/be-mono/internal/shared/utils"
 )
@@ -175,7 +175,7 @@ func (h *Handler) AdminDeleteProduct(c *gin.Context) {
 	response.NoContent(c)
 }
 
-func productResponse(p *db.ProductEntity) dto.ProductResponseDTO {
+func productResponse(p *entities.Product) dto.ProductResponseDTO {
 	if p == nil {
 		return dto.ProductResponseDTO{}
 	}

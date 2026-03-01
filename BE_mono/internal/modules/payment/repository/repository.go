@@ -5,14 +5,15 @@ import (
 	"gorm.io/gorm/clause"
 
 	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type Repository interface {
-	FindOrder(orderID string) (*db.OrderEntity, error)
-	FindPaymentByIdempotency(orderID string, idemKey string) (*db.PaymentTransactionEntity, error)
-	CreatePayment(payment *db.PaymentTransactionEntity) error
-	ListPaymentsByOrder(orderID string) ([]db.PaymentTransactionEntity, error)
-	FindWebhookDuplicate(providerTxnCode string) (*db.PaymentTransactionEntity, error)
+	FindOrder(orderID string) (*entities.Order, error)
+	FindPaymentByIdempotency(orderID string, idemKey string) (*entities.PaymentTransaction, error)
+	CreatePayment(payment *entities.PaymentTransaction) error
+	ListPaymentsByOrder(orderID string) ([]entities.PaymentTransaction, error)
+	FindWebhookDuplicate(providerTxnCode string) (*entities.PaymentTransaction, error)
 	ProcessWebhookTx(orderID string, provider string, providerTxnCode string, status string, finalState string) (string, error)
 }
 
@@ -24,30 +25,30 @@ func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) FindOrder(orderID string) (*db.OrderEntity, error) {
-	var order db.OrderEntity
+func (r *GormRepository) FindOrder(orderID string) (*entities.Order, error) {
+	var order entities.Order
 	err := r.db.Select("id", "user_id", "total_amount", "currency_code").Where("id = ?", orderID).Take(&order).Error
 	return &order, err
 }
 
-func (r *GormRepository) FindPaymentByIdempotency(orderID string, idemKey string) (*db.PaymentTransactionEntity, error) {
-	var existing db.PaymentTransactionEntity
+func (r *GormRepository) FindPaymentByIdempotency(orderID string, idemKey string) (*entities.PaymentTransaction, error) {
+	var existing entities.PaymentTransaction
 	err := r.db.Where("order_id = ? AND idempotency_key = ?", orderID, idemKey).Take(&existing).Error
 	return &existing, err
 }
 
-func (r *GormRepository) CreatePayment(payment *db.PaymentTransactionEntity) error {
+func (r *GormRepository) CreatePayment(payment *entities.PaymentTransaction) error {
 	return r.db.Create(payment).Error
 }
 
-func (r *GormRepository) ListPaymentsByOrder(orderID string) ([]db.PaymentTransactionEntity, error) {
-	entities := make([]db.PaymentTransactionEntity, 0)
-	err := r.db.Where("order_id = ?", orderID).Order("created_at ASC").Find(&entities).Error
-	return entities, err
+func (r *GormRepository) ListPaymentsByOrder(orderID string) ([]entities.PaymentTransaction, error) {
+	rows := make([]entities.PaymentTransaction, 0)
+	err := r.db.Where("order_id = ?", orderID).Order("created_at ASC").Find(&rows).Error
+	return rows, err
 }
 
-func (r *GormRepository) FindWebhookDuplicate(providerTxnCode string) (*db.PaymentTransactionEntity, error) {
-	var duplicate db.PaymentTransactionEntity
+func (r *GormRepository) FindWebhookDuplicate(providerTxnCode string) (*entities.PaymentTransaction, error) {
+	var duplicate entities.PaymentTransaction
 	err := r.db.Where("provider_txn_code = ?", providerTxnCode).Take(&duplicate).Error
 	return &duplicate, err
 }
@@ -56,7 +57,7 @@ func (r *GormRepository) ProcessWebhookTx(orderID string, provider string, provi
 	var paymentID string
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var payment db.PaymentTransactionEntity
+		var payment entities.PaymentTransaction
 		lockErr := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("order_id = ? AND provider = ? AND status = ?", orderID, provider, db.PaymentTxnStatePending).
 			Order("created_at ASC").
@@ -67,12 +68,12 @@ func (r *GormRepository) ProcessWebhookTx(orderID string, provider string, provi
 				return lockErr
 			}
 			// If not found, create one
-			var order db.OrderEntity
+			var order entities.Order
 			if err := tx.Select("id", "total_amount", "currency_code").Where("id = ?", orderID).Take(&order).Error; err != nil {
 				return err
 			}
 
-			payment = db.PaymentTransactionEntity{
+			payment = entities.PaymentTransaction{
 				ID:              providerTxnCode, // Assuming providerTxnCode is used as ID or injected later, handled by service if not uuid
 				OrderID:         orderID,
 				TxnType:         db.PaymentTxnTypePayment,
@@ -87,13 +88,13 @@ func (r *GormRepository) ProcessWebhookTx(orderID string, provider string, provi
 
 			// Actually, let's look at the original service code:
 			// It generates a UUID on the fly and creates the payment in the transaction.
-			// Let's pass an optional *db.PaymentTransactionEntity to create if lockErr == gorm.ErrRecordNotFound.
+			// Let's pass an optional *entities.PaymentTransaction to create if lockErr == gorm.ErrRecordNotFound.
 			return gorm.ErrRecordNotFound
 		}
 
 		paymentID = payment.ID
 
-		if err := tx.Model(&db.PaymentTransactionEntity{}).
+		if err := tx.Model(&entities.PaymentTransaction{}).
 			Where("id = ?", paymentID).
 			Updates(map[string]any{
 				"provider_txn_code": providerTxnCode,

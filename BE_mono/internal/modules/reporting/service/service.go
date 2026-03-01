@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"golf-store/be-mono/internal/modules/reporting/repository"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type Service struct {
@@ -27,7 +27,7 @@ type SummaryOutput struct {
 }
 
 type OrdersOutput struct {
-	Items      []*db.OrderEntity
+	Items      []*entities.Order
 	Page       int
 	PageSize   int
 	Total      int
@@ -65,14 +65,14 @@ func (s *Service) Orders(from time.Time, to time.Time, page int, pageSize int) O
 		pageSize = 20
 	}
 
-	entities, total, err := s.repo.ListCompletedOrders(from, to, page, pageSize)
+	rows, total, err := s.repo.ListCompletedOrders(from, to, page, pageSize)
 	if err != nil {
-		return OrdersOutput{Items: []*db.OrderEntity{}, Page: page, PageSize: pageSize, Total: int(total), TotalPages: calcTotalPages(int(total), pageSize)}
+		return OrdersOutput{Items: []*entities.Order{}, Page: page, PageSize: pageSize, Total: int(total), TotalPages: calcTotalPages(int(total), pageSize)}
 	}
 
-	items := make([]*db.OrderEntity, 0, len(entities))
-	for i := range entities {
-		items = append(items, cloneOrder(&entities[i]))
+	items := make([]*entities.Order, 0, len(rows))
+	for i := range rows {
+		items = append(items, rows[i])
 	}
 
 	return OrdersOutput{
@@ -89,19 +89,4 @@ func calcTotalPages(total int, pageSize int) int {
 		return 0
 	}
 	return (total + pageSize - 1) / pageSize
-}
-
-func cloneOrder(entity *db.OrderEntity) *db.OrderEntity {
-	if entity == nil {
-		return nil
-	}
-	copy := *entity
-	copy.CreatedAt = copy.CreatedAt.UTC()
-	copy.UpdatedAt = copy.UpdatedAt.UTC()
-	copy.PlacedAt = copy.PlacedAt.UTC()
-	if copy.PaymentDueAt != nil {
-		t := copy.PaymentDueAt.UTC()
-		copy.PaymentDueAt = &t
-	}
-	return &copy
 }

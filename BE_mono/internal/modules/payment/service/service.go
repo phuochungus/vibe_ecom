@@ -11,6 +11,7 @@ import (
 	ordersvc "golf-store/be-mono/internal/modules/order/service"
 	"golf-store/be-mono/internal/modules/payment/repository"
 	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
@@ -74,7 +75,7 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 		provider = "PAYOS"
 	}
 
-	payment := db.PaymentTransactionEntity{
+	payment := entities.PaymentTransaction{
 		ID:             paymentID,
 		OrderID:        input.OrderID,
 		TxnType:        db.PaymentTxnTypePayment,
@@ -97,7 +98,7 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 	}, nil
 }
 
-func (s *Service) ListByOrderForUser(orderID string, userID string) ([]*db.PaymentTransactionEntity, *apperrors.APIError) {
+func (s *Service) ListByOrderForUser(orderID string, userID string) ([]*entities.PaymentTransaction, *apperrors.APIError) {
 	order, err := s.repo.FindOrder(orderID)
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") {
@@ -109,14 +110,14 @@ func (s *Service) ListByOrderForUser(orderID string, userID string) ([]*db.Payme
 		return nil, apperrors.ErrNotFound
 	}
 
-	entities, err := s.repo.ListPaymentsByOrder(orderID)
+	rows, err := s.repo.ListPaymentsByOrder(orderID)
 	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query payments"}
 	}
 
-	list := make([]*db.PaymentTransactionEntity, 0, len(entities))
-	for i := range entities {
-		list = append(list, clonePayment(&entities[i]))
+	list := make([]*entities.PaymentTransaction, 0, len(rows))
+	for i := range rows {
+		list = append(list, clonePayment(&rows[i]))
 	}
 	return list, nil
 }
@@ -186,7 +187,7 @@ func (s *Service) ProcessWebhook(provider string, payload map[string]any) (map[s
 	}, nil
 }
 
-func clonePayment(entity *db.PaymentTransactionEntity) *db.PaymentTransactionEntity {
+func clonePayment(entity *entities.PaymentTransaction) *entities.PaymentTransaction {
 	if entity == nil {
 		return nil
 	}

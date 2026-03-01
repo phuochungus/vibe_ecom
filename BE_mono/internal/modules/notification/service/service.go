@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"golf-store/be-mono/internal/modules/notification/repository"
-	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
@@ -25,7 +25,7 @@ type ListInput struct {
 }
 
 type ListOutput struct {
-	Items      []*db.NotificationEntity
+	Items      []*entities.Notification
 	Page       int
 	PageSize   int
 	Total      int
@@ -47,10 +47,10 @@ func (s *Service) List(input ListInput) ListOutput {
 		PageSize: input.PageSize,
 	}
 
-	entities, total, err := s.repo.List(filter)
+	results, total, err := s.repo.List(filter)
 	if err != nil {
 		return ListOutput{
-			Items:      []*db.NotificationEntity{},
+			Items:      []*entities.Notification{},
 			Page:       input.Page,
 			PageSize:   input.PageSize,
 			Total:      0,
@@ -58,9 +58,9 @@ func (s *Service) List(input ListInput) ListOutput {
 		}
 	}
 
-	items := make([]*db.NotificationEntity, 0, len(entities))
-	for i := range entities {
-		items = append(items, cloneNotification(&entities[i]))
+	items := make([]*entities.Notification, 0, len(results))
+	for i := range results {
+		items = append(items, results[i])
 	}
 
 	return ListOutput{
@@ -72,7 +72,7 @@ func (s *Service) List(input ListInput) ListOutput {
 	}
 }
 
-func (s *Service) MarkRead(userID string, notificationID string) (*db.NotificationEntity, *apperrors.APIError) {
+func (s *Service) MarkRead(userID string, notificationID string) (*entities.Notification, *apperrors.APIError) {
 	rows, err := s.repo.MarkRead(userID, notificationID)
 	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to update notification"}
@@ -88,26 +88,12 @@ func (s *Service) MarkRead(userID string, notificationID string) (*db.Notificati
 		}
 		return nil, apperrors.ErrNotFound // For any other fetch error post-update, returning not found is safer
 	}
-	return cloneNotification(entity), nil
+	return entity, nil
 }
 
 func (s *Service) MarkReadAll(userID string) int {
 	rows, _ := s.repo.MarkReadAll(userID)
 	return int(rows)
-}
-
-func cloneNotification(entity *db.NotificationEntity) *db.NotificationEntity {
-	if entity == nil {
-		return nil
-	}
-	copy := *entity
-	copy.CreatedAt = copy.CreatedAt.UTC()
-	copy.UpdatedAt = copy.UpdatedAt.UTC()
-	if copy.SentAt != nil {
-		t := copy.SentAt.UTC()
-		copy.SentAt = &t
-	}
-	return &copy
 }
 
 func calcTotalPages(total int, pageSize int) int {

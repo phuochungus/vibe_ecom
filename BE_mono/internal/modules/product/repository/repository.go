@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type ListFilter struct {
@@ -22,9 +23,9 @@ type ListFilter struct {
 }
 
 type Repository interface {
-	List(filter ListFilter) ([]*db.ProductEntity, int64, error)
-	FindByID(id string, adminView bool) (*db.ProductEntity, error)
-	Create(entity *db.ProductEntity) error
+	List(filter ListFilter) ([]*entities.Product, int64, error)
+	FindByID(id string, adminView bool) (*entities.Product, error)
+	Create(entity *entities.Product) error
 	Update(id string, updates map[string]any) (int64, error)
 	SoftDelete(id string, updates map[string]any) (int64, error)
 }
@@ -37,8 +38,8 @@ func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) List(filter ListFilter) ([]*db.ProductEntity, int64, error) {
-	query := r.db.Model(&db.ProductEntity{}).Where("deleted_at IS NULL")
+func (r *GormRepository) List(filter ListFilter) ([]*entities.Product, int64, error) {
+	query := r.db.Model(&entities.Product{}).Where("deleted_at IS NULL")
 
 	if !filter.AdminView {
 		query = query.Where("status = ?", db.ProductStatusActive)
@@ -66,29 +67,29 @@ func (r *GormRepository) List(filter ListFilter) ([]*db.ProductEntity, int64, er
 	}
 
 	offset := (filter.Page - 1) * filter.PageSize
-	var entities []db.ProductEntity
+	var products []entities.Product
 	if err := query.Order(fmt.Sprintf("%s %s", sortBy, sortOrder)).
 		Limit(filter.PageSize).
 		Offset(offset).
-		Find(&entities).Error; err != nil {
+		Find(&products).Error; err != nil {
 		return nil, total, err
 	}
 
-	items := make([]*db.ProductEntity, 0, len(entities))
-	for i := range entities {
-		items = append(items, &entities[i])
+	items := make([]*entities.Product, 0, len(products))
+	for i := range products {
+		items = append(items, &products[i])
 	}
 
 	return items, total, nil
 }
 
-func (r *GormRepository) FindByID(id string, adminView bool) (*db.ProductEntity, error) {
+func (r *GormRepository) FindByID(id string, adminView bool) (*entities.Product, error) {
 	query := r.db.Where("id = ? AND deleted_at IS NULL", id)
 	if !adminView {
 		query = query.Where("status = ?", db.ProductStatusActive)
 	}
 
-	var entity db.ProductEntity
+	var entity entities.Product
 	err := query.Take(&entity).Error
 	if err != nil {
 		return nil, err
@@ -96,19 +97,19 @@ func (r *GormRepository) FindByID(id string, adminView bool) (*db.ProductEntity,
 	return &entity, nil
 }
 
-func (r *GormRepository) Create(entity *db.ProductEntity) error {
+func (r *GormRepository) Create(entity *entities.Product) error {
 	return r.db.Create(entity).Error
 }
 
 func (r *GormRepository) Update(id string, updates map[string]any) (int64, error) {
-	res := r.db.Model(&db.ProductEntity{}).
+	res := r.db.Model(&entities.Product{}).
 		Where("id = ? AND deleted_at IS NULL", id).
 		Updates(updates)
 	return res.RowsAffected, res.Error
 }
 
 func (r *GormRepository) SoftDelete(id string, updates map[string]any) (int64, error) {
-	res := r.db.Model(&db.ProductEntity{}).
+	res := r.db.Model(&entities.Product{}).
 		Where("id = ? AND deleted_at IS NULL", id).
 		Updates(updates)
 	return res.RowsAffected, res.Error

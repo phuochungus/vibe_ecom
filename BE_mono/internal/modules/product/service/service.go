@@ -10,6 +10,7 @@ import (
 
 	"golf-store/be-mono/internal/modules/product/repository"
 	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 	apperrors "golf-store/be-mono/internal/shared/errors"
 )
 
@@ -34,7 +35,7 @@ type ListInput struct {
 }
 
 type ListOutput struct {
-	Items      []*db.ProductEntity
+	Items      []*entities.Product
 	Page       int
 	PageSize   int
 	Total      int
@@ -74,7 +75,7 @@ func (s *Service) List(input ListInput) ListOutput {
 	items, total, err := s.repo.List(filter)
 	if err != nil {
 		return ListOutput{
-			Items:      []*db.ProductEntity{},
+			Items:      []*entities.Product{},
 			Page:       input.Page,
 			PageSize:   input.PageSize,
 			Total:      0,
@@ -91,7 +92,7 @@ func (s *Service) List(input ListInput) ListOutput {
 	}
 }
 
-func (s *Service) GetByID(productID string, adminView bool) (*db.ProductEntity, *apperrors.APIError) {
+func (s *Service) GetByID(productID string, adminView bool) (*entities.Product, *apperrors.APIError) {
 	entity, err := s.repo.FindByID(productID, adminView)
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") {
@@ -103,7 +104,7 @@ func (s *Service) GetByID(productID string, adminView bool) (*db.ProductEntity, 
 	return entity, nil
 }
 
-func (s *Service) AdminCreate(input AdminUpsertInput) (*db.ProductEntity, *apperrors.APIError) {
+func (s *Service) AdminCreate(input AdminUpsertInput) (*entities.Product, *apperrors.APIError) {
 	now := time.Now().UTC()
 	if input.Price <= 0 {
 		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "price must be greater than 0"}
@@ -117,7 +118,7 @@ func (s *Service) AdminCreate(input AdminUpsertInput) (*db.ProductEntity, *apper
 	if status == "" {
 		status = db.ProductStatusActive
 	}
-	entity := &db.ProductEntity{
+	entity := &entities.Product{
 		ID:          id,
 		SKU:         strings.TrimSpace(input.SKU),
 		Name:        strings.TrimSpace(input.Name),
@@ -136,7 +137,7 @@ func (s *Service) AdminCreate(input AdminUpsertInput) (*db.ProductEntity, *apper
 	return s.GetByID(id, true)
 }
 
-func (s *Service) AdminUpdate(productID string, input AdminUpsertInput) (*db.ProductEntity, *apperrors.APIError) {
+func (s *Service) AdminUpdate(productID string, input AdminUpsertInput) (*entities.Product, *apperrors.APIError) {
 	updateMap := map[string]any{}
 
 	if strings.TrimSpace(input.SKU) != "" {

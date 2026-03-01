@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"golf-store/be-mono/internal/platform/db"
+	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 type ListFilter struct {
@@ -21,16 +22,16 @@ type ListFilter struct {
 }
 
 type Repository interface {
-	FindIdempotentOrder(userID string, idemKey string) (*db.OrderEntity, error)
-	CreateOrderTx(order *db.OrderEntity, items []db.OrderItemEntity, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity, productUpdates map[string]int) error
-	List(filter ListFilter) ([]db.OrderEntity, int64, error)
-	FindByID(orderID string) (*db.OrderEntity, error)
-	CancelOrderTx(orderID string, userID string, updates map[string]any, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity) error
-	UpdateOrderStatusTx(orderID string, updates map[string]any, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity) error
-	MarkPaymentResultTx(orderID string, updates map[string]any, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity) error
-	LoadTracking(orderID string) ([]db.OrderTrackingEventEntity, error)
-	FindUserByID(userID string) (*db.UserEntity, error)
-	LockProduct(tx *gorm.DB, productID string) (*db.ProductEntity, error)
+	FindIdempotentOrder(userID string, idemKey string) (*entities.Order, error)
+	CreateOrderTx(order *entities.Order, items []entities.OrderItem, tracking *entities.OrderTrackingEvent, notification *entities.Notification, productUpdates map[string]int) error
+	List(filter ListFilter) ([]entities.Order, int64, error)
+	FindByID(orderID string) (*entities.Order, error)
+	CancelOrderTx(orderID string, userID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
+	UpdateOrderStatusTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
+	MarkPaymentResultTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
+	LoadTracking(orderID string) ([]entities.OrderTrackingEvent, error)
+	FindUserByID(userID string) (*entities.User, error)
+	LockProduct(tx *gorm.DB, productID string) (*entities.Product, error)
 }
 
 type GormRepository struct {
@@ -41,17 +42,17 @@ func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) FindIdempotentOrder(userID string, idemKey string) (*db.OrderEntity, error) {
-	var existing db.OrderEntity
+func (r *GormRepository) FindIdempotentOrder(userID string, idemKey string) (*entities.Order, error) {
+	var existing entities.Order
 	err := r.db.Where("user_id = ? AND idempotency_key = ?", userID, idemKey).Take(&existing).Error
 	return &existing, err
 }
 
-func (r *GormRepository) CreateOrderTx(order *db.OrderEntity, items []db.OrderItemEntity, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity, productUpdates map[string]int) error {
+func (r *GormRepository) CreateOrderTx(order *entities.Order, items []entities.OrderItem, tracking *entities.OrderTrackingEvent, notification *entities.Notification, productUpdates map[string]int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. Update stock
 		for productID, quantity := range productUpdates {
-			if err := tx.Model(&db.ProductEntity{}).
+			if err := tx.Model(&entities.Product{}).
 				Where("id = ?", productID).
 				Updates(map[string]any{
 					"stock":      gorm.Expr("stock - ?", quantity),
@@ -91,8 +92,8 @@ func (r *GormRepository) CreateOrderTx(order *db.OrderEntity, items []db.OrderIt
 	})
 }
 
-func (r *GormRepository) List(filter ListFilter) ([]db.OrderEntity, int64, error) {
-	query := r.db.Model(&db.OrderEntity{})
+func (r *GormRepository) List(filter ListFilter) ([]entities.Order, int64, error) {
+	query := r.db.Model(&entities.Order{})
 	if !filter.Admin {
 		query = query.Where("user_id = ?", filter.UserID)
 	}
@@ -112,26 +113,26 @@ func (r *GormRepository) List(filter ListFilter) ([]db.OrderEntity, int64, error
 	}
 
 	offset := (filter.Page - 1) * filter.PageSize
-	entities := make([]db.OrderEntity, 0)
-	if err := query.Order("placed_at DESC").Limit(filter.PageSize).Offset(offset).Find(&entities).Error; err != nil {
+	rows := make([]entities.Order, 0)
+	if err := query.Order("placed_at DESC").Limit(filter.PageSize).Offset(offset).Find(&rows).Error; err != nil {
 		return nil, total, err
 	}
 
-	return entities, total, nil
+	return rows, total, nil
 }
 
-func (r *GormRepository) FindByID(orderID string) (*db.OrderEntity, error) {
-	var orderEntity db.OrderEntity
+func (r *GormRepository) FindByID(orderID string) (*entities.Order, error) {
+	var orderEntity entities.Order
 	if err := r.db.Preload("Items").Where("id = ?", orderID).Take(&orderEntity).Error; err != nil {
 		return nil, err
 	}
 	return &orderEntity, nil
 }
 
-func (r *GormRepository) CancelOrderTx(orderID string, userID string, updates map[string]any, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity) error {
+func (r *GormRepository) CancelOrderTx(orderID string, userID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. Lock order
-		var orderEntity db.OrderEntity
+		var orderEntity entities.Order
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ? AND user_id = ?", orderID, userID).
 			Take(&orderEntity).Error; err != nil {
@@ -143,17 +144,17 @@ func (r *GormRepository) CancelOrderTx(orderID string, userID string, updates ma
 		}
 
 		// 2. Update order
-		if err := tx.Model(&db.OrderEntity{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
+		if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
 			return err
 		}
 
 		// 3. Restore stock
-		items := make([]db.OrderItemEntity, 0)
+		items := make([]entities.OrderItem, 0)
 		if err := tx.Where("order_id = ?", orderID).Find(&items).Error; err != nil {
 			return err
 		}
 		for _, item := range items {
-			if err := tx.Model(&db.ProductEntity{}).
+			if err := tx.Model(&entities.Product{}).
 				Where("id = ?", item.ProductID).
 				Updates(map[string]any{
 					"stock":      gorm.Expr("stock + ?", item.Quantity),
@@ -178,10 +179,10 @@ func (r *GormRepository) CancelOrderTx(orderID string, userID string, updates ma
 	})
 }
 
-func (r *GormRepository) UpdateOrderStatusTx(orderID string, updates map[string]any, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity) error {
+func (r *GormRepository) UpdateOrderStatusTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 1. Lock
-		var orderEntity db.OrderEntity
+		var orderEntity entities.Order
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ?", orderID).
 			Take(&orderEntity).Error; err != nil {
@@ -194,7 +195,7 @@ func (r *GormRepository) UpdateOrderStatusTx(orderID string, updates map[string]
 		}
 
 		// 2. Update
-		if err := tx.Model(&db.OrderEntity{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
+		if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
 			return err
 		}
 
@@ -213,16 +214,16 @@ func (r *GormRepository) UpdateOrderStatusTx(orderID string, updates map[string]
 	})
 }
 
-func (r *GormRepository) MarkPaymentResultTx(orderID string, updates map[string]any, tracking *db.OrderTrackingEventEntity, notification *db.NotificationEntity) error {
+func (r *GormRepository) MarkPaymentResultTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		var orderEntity db.OrderEntity
+		var orderEntity entities.Order
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ?", orderID).
 			Take(&orderEntity).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Model(&db.OrderEntity{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
+		if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
 			return err
 		}
 
@@ -240,22 +241,22 @@ func (r *GormRepository) MarkPaymentResultTx(orderID string, updates map[string]
 	})
 }
 
-func (r *GormRepository) LoadTracking(orderID string) ([]db.OrderTrackingEventEntity, error) {
-	entities := make([]db.OrderTrackingEventEntity, 0)
-	if err := r.db.Where("order_id = ?", orderID).Order("occurred_at ASC").Find(&entities).Error; err != nil {
+func (r *GormRepository) LoadTracking(orderID string) ([]entities.OrderTrackingEvent, error) {
+	rows := make([]entities.OrderTrackingEvent, 0)
+	if err := r.db.Where("order_id = ?", orderID).Order("occurred_at ASC").Find(&rows).Error; err != nil {
 		return nil, err
 	}
-	return entities, nil
+	return rows, nil
 }
 
-func (r *GormRepository) FindUserByID(userID string) (*db.UserEntity, error) {
-	var user db.UserEntity
+func (r *GormRepository) FindUserByID(userID string) (*entities.User, error) {
+	var user entities.User
 	err := r.db.Select("id", "status").Where("id = ?", userID).Take(&user).Error
 	return &user, err
 }
 
-func (r *GormRepository) LockProduct(tx *gorm.DB, productID string) (*db.ProductEntity, error) {
-	var product db.ProductEntity
+func (r *GormRepository) LockProduct(tx *gorm.DB, productID string) (*entities.Product, error) {
+	var product entities.Product
 	dbConn := tx
 	if dbConn == nil {
 		dbConn = r.db
@@ -296,7 +297,7 @@ func isValidTransition(from string, to string) bool {
 	return false
 }
 
-func upsertNotification(tx *gorm.DB, notification *db.NotificationEntity) error {
+func upsertNotification(tx *gorm.DB, notification *entities.Notification) error {
 	return tx.Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{Name: "user_id"},
