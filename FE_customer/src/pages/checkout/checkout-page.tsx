@@ -34,16 +34,18 @@ export default function CheckoutPage() {
             product_id: item.product_id,
             quantity: item.quantity,
           })),
-          payment_method: paymentMethod,
-          shipping_recipient_name: data.recipient_name,
-          shipping_phone: data.phone,
-          shipping_line1: data.address_line1,
-          shipping_line2: data.address_line2,
-          shipping_ward: data.ward,
-          shipping_district: data.district,
-          shipping_city: data.city,
-          shipping_province: data.province,
-          shipping_country_code: 'VN',
+          shipping_address: {
+            recipient_name: data.recipient_name,
+            recipient_phone: data.phone,
+            line1: data.address_line1,
+            line2: data.address_line2,
+            ward: data.ward,
+            district: data.district,
+            city: data.city,
+            province: data.province,
+            postal_code: '700000',
+            country_code: 'VN',
+          },
           customer_note: data.note,
         },
         idempotencyKey
@@ -56,7 +58,16 @@ export default function CheckoutPage() {
   const initiatePaymentMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const idempotencyKey = crypto.randomUUID()
-      return await paymentsApi.initiate(orderId, idempotencyKey)
+      const origin = window.location.origin
+      return await paymentsApi.initiate(
+        orderId,
+        {
+          provider: 'PAYOS',
+          return_url: `${origin}/checkout/return?orderId=${orderId}&status=PAID`,
+          cancel_url: `${origin}/checkout/cancel?orderId=${orderId}`,
+        },
+        idempotencyKey
+      )
     },
   })
 
@@ -67,7 +78,7 @@ export default function CheckoutPage() {
         const values = await addressForm.validateFields()
         setAddressData(values)
         setCurrentStep(1)
-      } catch (error) {
+      } catch {
         message.error('Vui lòng điền đầy đủ thông tin giao hàng')
       }
     } else if (currentStep === 1) {
@@ -86,7 +97,7 @@ export default function CheckoutPage() {
           message.success({ content: 'Đặt hàng thành công!', key: 'checkout' })
           navigate(`/checkout/return?orderId=${order.id}&status=COD`)
         } else {
-          // MOMO: initiate payment and redirect
+          // PAYOS: initiate payment and redirect
           message.loading({ content: 'Đang chuyển đến trang thanh toán...', key: 'checkout' })
 
           const payment = await initiatePaymentMutation.mutateAsync(order.id)
@@ -132,7 +143,7 @@ export default function CheckoutPage() {
 
       <Spin spinning={isLoading}>
         <div style={{ minHeight: 400 }}>
-          {currentStep === 0 && <AddressForm form={addressForm as any} />}
+          {currentStep === 0 && <AddressForm form={addressForm} />}
 
           {currentStep === 1 && addressData && (
             <OrderReview
@@ -167,4 +178,3 @@ export default function CheckoutPage() {
     </div>
   )
 }
-

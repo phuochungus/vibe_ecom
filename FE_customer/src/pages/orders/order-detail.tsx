@@ -183,8 +183,8 @@ export default function OrderDetailPage() {
                 {/* Timeline */}
                 <Col xs={24} lg={10}>
                     <Card title="Lịch sử đơn hàng" size="small">
-                        {tracking && tracking.length > 0 ? (
-                            <OrderTimeline history={tracking} />
+                        {tracking && tracking.timeline.length > 0 ? (
+                            <OrderTimeline history={tracking.timeline} />
                         ) : (
                             <Text type="secondary">Chưa có lịch sử</Text>
                         )}

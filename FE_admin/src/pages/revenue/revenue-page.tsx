@@ -102,6 +102,8 @@ export default function RevenuePage() {
     : '—'
 
   const totalPages = ordersData?.pagination.total_pages ?? 1
+  const getOrderCustomerName = (order: NonNullable<typeof ordersData>['items'][number]) =>
+    order.shipping_recipient_name ?? order.user?.full_name ?? '—'
 
   // For chart: we only have summary, so show 2-bar comparison
   const chartData = summary
@@ -233,7 +235,7 @@ export default function RevenuePage() {
                         <TableCell className="font-mono text-xs font-medium">
                           {order.order_code}
                         </TableCell>
-                        <TableCell className="text-sm">{order.shipping_recipient_name}</TableCell>
+                        <TableCell className="text-sm">{getOrderCustomerName(order)}</TableCell>
                         <TableCell className="text-right font-semibold text-sm">
                           {formatCurrency(order.total_amount)}
                         </TableCell>

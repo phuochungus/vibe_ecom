@@ -4,7 +4,7 @@ import type { Notification, PaginatedResponse } from '@/types'
 export interface NotificationListParams {
   page?: number
   page_size?: number
-  is_read?: boolean
+  status?: 'PENDING' | 'SENT' | 'FAILED'
 }
 
 export const notificationsApi = {
@@ -18,8 +18,8 @@ export const notificationsApi = {
     return data.data
   },
 
-  getUnreadCount: async () => {
-    const { data } = await api.get<{ success: boolean; data: { count: number } }>('/notifications/unread-count')
-    return data.data.count
+  markAllAsRead: async () => {
+    const { data } = await api.patch<{ success: boolean; data: { updated_count: number } }>('/notifications/read-all')
+    return data.data.updated_count
   },
 }

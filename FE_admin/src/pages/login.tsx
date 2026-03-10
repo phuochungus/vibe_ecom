@@ -34,7 +34,9 @@ export default function LoginPage() {
             navigate("/");
         } catch (err) {
             const msg = getErrorMessage(err);
-            if (msg.includes("ACCOUNT_LOCKED") || msg.toLowerCase().includes("locked")) {
+            if (msg.includes("FORBIDDEN_ADMIN_ONLY")) {
+                toast.error("Tài khoản này không có quyền truy cập trang quản trị.");
+            } else if (msg.includes("ACCOUNT_LOCKED") || msg.toLowerCase().includes("locked")) {
                 toast.error("Tài khoản đã bị khóa tạm 15 phút do đăng nhập sai quá nhiều lần.");
             } else {
                 toast.error("Sai email/mật khẩu hoặc tài khoản không hợp lệ.");
@@ -73,6 +75,7 @@ export default function LoginPage() {
                                 id="identifier"
                                 placeholder="admin@example.com"
                                 autoComplete="username"
+                                data-testid="login-identifier"
                                 {...register("identifier", { required: "Vui lòng nhập email hoặc số điện thoại" })}
                             />
                             {errors.identifier && (
@@ -89,6 +92,7 @@ export default function LoginPage() {
                                     placeholder="••••••••"
                                     autoComplete="current-password"
                                     className="pr-10"
+                                    data-testid="login-password"
                                     {...register("password", { required: "Vui lòng nhập mật khẩu" })}
                                 />
                                 <Button
@@ -109,7 +113,7 @@ export default function LoginPage() {
                             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
                         </div>
 
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit">
                             {loading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

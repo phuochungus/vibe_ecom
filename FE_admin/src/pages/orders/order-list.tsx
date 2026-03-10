@@ -57,11 +57,15 @@ export default function OrderListPage() {
     ? data?.items.filter(
         (o) =>
           o.order_code.toLowerCase().includes(q.toLowerCase()) ||
-          o.shipping_recipient_name.toLowerCase().includes(q.toLowerCase())
+          (o.shipping_recipient_name ?? o.user?.full_name ?? '').toLowerCase().includes(q.toLowerCase())
       )
     : data?.items
 
   const totalPages = data?.pagination.total_pages ?? 1
+  const getRecipientName = (order: NonNullable<typeof data>['items'][number]) =>
+    order.shipping_recipient_name ?? order.user?.full_name ?? 'Khách hàng chưa rõ'
+  const getRecipientPhone = (order: NonNullable<typeof data>['items'][number]) =>
+    order.shipping_phone ?? order.user?.phone ?? '—'
 
   return (
     <div className="space-y-5">
@@ -132,8 +136,8 @@ export default function OrderListPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-sm">{order.shipping_recipient_name}</p>
-                        <p className="text-xs text-muted-foreground">{order.shipping_phone}</p>
+                        <p className="font-medium text-sm">{getRecipientName(order)}</p>
+                        <p className="text-xs text-muted-foreground">{getRecipientPhone(order)}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-semibold">

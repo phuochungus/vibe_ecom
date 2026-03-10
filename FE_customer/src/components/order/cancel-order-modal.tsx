@@ -33,7 +33,7 @@ export default function CancelOrderModal({ orderId, open, onClose }: CancelOrder
     try {
       const values = await form.validateFields()
       await cancelMutation.mutateAsync(values.reason)
-    } catch (error) {
+    } catch {
       // Form validation error
     }
   }

@@ -26,7 +26,7 @@ func NewGorm(db *gorm.DB) *GormRepository {
 
 func (r *GormRepository) FindOrder(orderID string) (*entities.Order, error) {
 	var order entities.Order
-	err := r.db.Select("id", "user_id", "total_amount", "currency_code").Where("id = ?", orderID).Take(&order).Error
+	err := r.db.Select("id", "user_id", "total_amount", "currency_code", "order_status", "payment_status", "payment_due_at").Where("id = ?", orderID).Take(&order).Error
 	return &order, err
 }
 

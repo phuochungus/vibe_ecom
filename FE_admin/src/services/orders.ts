@@ -21,6 +21,6 @@ export const ordersApi = {
 
   getTracking: (id: string) =>
     api.get<{ data: { order_id: string; current_status: OrderStatus; timeline: Order['status_history'] } }>(
-      `/orders/${id}/tracking`
+      `/admin/orders/${id}/tracking`
     ).then((r) => r.data.data),
 }

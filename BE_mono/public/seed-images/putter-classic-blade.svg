@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10161d"/>
+      <stop offset="100%" stop-color="#2d2f42"/>
+    </linearGradient>
+    <linearGradient id="putter" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f3f4f5"/>
+      <stop offset="45%" stop-color="#c8cfd4"/>
+      <stop offset="100%" stop-color="#7a858d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="1020" cy="140" r="130" fill="#ffffff0d"/>
+  <rect x="0" y="610" width="1200" height="190" fill="#1b2733"/>
+  <path d="M110 690c170-70 315-76 456-20 141 55 294 51 524-16v146H110z" fill="#243948"/>
+  <g transform="translate(190 180) rotate(-8 410 170)">
+    <rect x="280" y="58" width="560" height="16" rx="8" fill="#1a1f24"/>
+    <rect x="144" y="184" width="168" height="104" rx="18" fill="url(#putter)"/>
+    <rect x="160" y="200" width="126" height="70" rx="10" fill="#394750"/>
+    <path d="M292 180h24l18-104h-26z" fill="#1f2428"/>
+    <path d="M280 284c-73 69-136 145-191 241" stroke="#181d21" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="132" cy="472" r="50" fill="#d8dadc"/>
+    <circle cx="132" cy="472" r="18" fill="#a4a8ad"/>
+  </g>
+  <text x="92" y="116" fill="#f2f5f8" font-family="Arial, Helvetica, sans-serif" font-size="50" font-weight="700">Putter Classic Blade</text>
+  <text x="94" y="170" fill="#cdd7e1" font-family="Arial, Helvetica, sans-serif" font-size="24">Classic blade profile for feel-heavy putting on fast greens</text>
+</svg>

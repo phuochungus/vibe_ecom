@@ -1,4 +1,4 @@
-import { Form, Input, Row, Col } from 'antd'
+import { Form, Input, Row, Col, type FormInstance } from 'antd'
 
 export interface AddressFormValues {
   recipient_name: string
@@ -13,7 +13,7 @@ export interface AddressFormValues {
 }
 
 interface AddressFormProps {
-  form: ReturnType<typeof Form.useForm>[0]
+  form: FormInstance<AddressFormValues>
 }
 
 export default function AddressForm({ form }: AddressFormProps) {

@@ -83,14 +83,14 @@ export default function OrderReview({ items, address, subtotal, shippingFee, tot
                 </div>
               </Space>
             </Radio>
-            <Radio value="MOMO" style={{ padding: '8px 0' }}>
+            <Radio value="PAYOS" style={{ padding: '8px 0' }}>
               <Space>
                 <WalletOutlined style={{ fontSize: 20, color: '#a50064' }} />
                 <div>
-                  <Text strong>Ví MoMo</Text>
+                  <Text strong>Thanh toán online PAYOS</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Thanh toán qua ví điện tử MoMo
+                    Thanh toán tự động qua cổng thanh toán online
                   </Text>
                 </div>
               </Space>

@@ -13,6 +13,8 @@ import (
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
+const seedImageBaseURL = "http://127.0.0.1:8080/assets/seed-images"
+
 func InitSchema(gdb *gorm.DB) error {
 	if gdb == nil {
 		return fmt.Errorf("gorm db is required")
@@ -65,50 +67,45 @@ func SeedDemoData(gdb *gorm.DB) error {
 			return err
 		}
 
-		var productCount int64
-		if err := tx.Model(&entities.Product{}).Count(&productCount).Error; err != nil {
-			return err
-		}
-		if productCount == 0 {
-			products := []entities.Product{
-				{
-					ID:          uuid.NewString(),
-					SKU:         "GLF-DRIVER-001",
-					Name:        "Driver Pro X",
-					Description: "460cc driver for distance and forgiveness",
-					Price:       129900,
-					Stock:       25,
-					Status:      "ACTIVE",
-					ImageURL:    "https://images.local/driver-pro-x.jpg",
-					CreatedAt:   now,
-					UpdatedAt:   now,
-				},
-				{
-					ID:          uuid.NewString(),
-					SKU:         "GLF-IRON-SET-002",
-					Name:        "Iron Set Tour 6pcs",
-					Description: "Forged iron set for mid-to-low handicaps",
-					Price:       219900,
-					Stock:       12,
-					Status:      "ACTIVE",
-					ImageURL:    "https://images.local/iron-tour-6pcs.jpg",
-					CreatedAt:   now,
-					UpdatedAt:   now,
-				},
-				{
-					ID:          uuid.NewString(),
-					SKU:         "GLF-PUTTER-003",
-					Name:        "Putter Classic Blade",
-					Description: "Face-balanced blade putter",
-					Price:       89900,
-					Stock:       30,
-					Status:      "ACTIVE",
-					ImageURL:    "https://images.local/putter-classic-blade.jpg",
-					CreatedAt:   now,
-					UpdatedAt:   now,
-				},
-			}
-			if err := tx.Create(&products).Error; err != nil {
+		for _, product := range []entities.Product{
+			{
+				ID:          uuid.NewString(),
+				SKU:         "GLF-DRIVER-001",
+				Name:        "Driver Pro X",
+				Description: "460cc driver for distance and forgiveness",
+				Price:       129900,
+				Stock:       25,
+				Status:      "ACTIVE",
+				ImageURL:    seedImageURL("driver-pro-x.svg"),
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+			{
+				ID:          uuid.NewString(),
+				SKU:         "GLF-IRON-SET-002",
+				Name:        "Iron Set Tour 6pcs",
+				Description: "Forged iron set for mid-to-low handicaps",
+				Price:       219900,
+				Stock:       12,
+				Status:      "ACTIVE",
+				ImageURL:    seedImageURL("iron-tour-6pcs.svg"),
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+			{
+				ID:          uuid.NewString(),
+				SKU:         "GLF-PUTTER-003",
+				Name:        "Putter Classic Blade",
+				Description: "Face-balanced blade putter",
+				Price:       89900,
+				Stock:       30,
+				Status:      "ACTIVE",
+				ImageURL:    seedImageURL("putter-classic-blade.svg"),
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+		} {
+			if err := ensureSeedProduct(tx, product); err != nil {
 				return err
 			}
 		}
@@ -172,4 +169,29 @@ func ensureSeedUser(tx *gorm.DB, input seedUserInput) error {
 
 func looksLikeBcrypt(hash string) bool {
 	return strings.HasPrefix(strings.TrimSpace(hash), "$2")
+}
+
+func seedImageURL(filename string) string {
+	return seedImageBaseURL + "/" + strings.TrimSpace(filename)
+}
+
+func ensureSeedProduct(tx *gorm.DB, input entities.Product) error {
+	var product entities.Product
+	err := tx.Where("sku = ?", strings.TrimSpace(input.SKU)).Take(&product).Error
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return tx.Create(&input).Error
+	}
+
+	updates := map[string]any{
+		"name":        strings.TrimSpace(input.Name),
+		"description": strings.TrimSpace(input.Description),
+		"status":      input.Status,
+		"image_url":   strings.TrimSpace(input.ImageURL),
+		"updated_at":  input.UpdatedAt,
+	}
+
+	return tx.Model(&entities.Product{}).Where("id = ?", product.ID).Updates(updates).Error
 }

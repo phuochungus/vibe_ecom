@@ -15,6 +15,7 @@ import {
 } from 'antd'
 import { EyeOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
+import type { Dayjs } from 'dayjs'
 import { ordersApi } from '@/services/orders'
 import type { OrderListParams } from '@/services/orders'
 import { formatCurrency, formatOrderStatus, getOrderStatusColor, formatDateTime } from '@/lib/utils'
@@ -32,25 +33,24 @@ export default function OrderListPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['orders', filters],
     queryFn: () => ordersApi.list(filters),
+    refetchOnMount: 'always',
   })
 
   const handleStatusChange = (status: string) => {
     setFilters((prev) => ({ ...prev, status: status || undefined, page: 1 }))
   }
 
-  const handleDateChange = (dates: any) => {
-    if (dates && dates[0] && dates[1]) {
+  const handleDateChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
+    const [fromDate, toDate] = dates ?? [null, null]
+    if (fromDate && toDate) {
       setFilters((prev) => ({
         ...prev,
-        from: dates[0].format('YYYY-MM-DD'),
-        to: dates[1].format('YYYY-MM-DD'),
+        from: fromDate.startOf('day').toISOString(),
+        to: toDate.endOf('day').toISOString(),
         page: 1,
       }))
     } else {
-      setFilters((prev) => {
-        const { from, to, ...rest } = prev
-        return rest
-      })
+      setFilters((prev) => ({ ...prev, from: undefined, to: undefined, page: 1 }))
     }
   }
 

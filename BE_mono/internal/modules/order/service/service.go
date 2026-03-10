@@ -98,7 +98,7 @@ func (s *Service) Create(input dto.CreateOrderInput) (*entities.Order, *apperror
 		})
 	}
 
-	shippingFee := int64(3000000)
+	shippingFee := int64(30000)
 	discountAmount := int64(0)
 	totalAmount := subtotal + shippingFee - discountAmount
 	dueAt := now.Add(30 * time.Minute)
@@ -199,7 +199,14 @@ func (s *Service) List(input dto.ListInput) dto.ListOutput {
 
 	items := make([]*entities.Order, 0, len(rows))
 	for i := range rows {
-		items = append(items, &rows[i])
+		orderRef := &rows[i]
+		if _, expired, _ := s.expireIfPastDue(orderRef); expired {
+			refreshed, getErr := s.repo.FindByID(orderRef.ID)
+			if getErr == nil {
+				orderRef = refreshed
+			}
+		}
+		items = append(items, orderRef)
 	}
 
 	return dto.ListOutput{
@@ -222,7 +229,8 @@ func (s *Service) GetByIDForUser(orderID string, userID string) (*entities.Order
 	if order.UserID != userID {
 		return nil, apperrors.ErrNotFound
 	}
-	return order, nil
+	order, _, apiErr := s.expireIfPastDue(order)
+	return order, apiErr
 }
 
 func (s *Service) GetByIDAdmin(orderID string) (*entities.Order, *apperrors.APIError) {
@@ -233,7 +241,8 @@ func (s *Service) GetByIDAdmin(orderID string) (*entities.Order, *apperrors.APIE
 	if err != nil {
 		return nil, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query order"}
 	}
-	return order, nil
+	order, _, apiErr := s.expireIfPastDue(order)
+	return order, apiErr
 }
 
 func (s *Service) CancelByUser(orderID string, userID string, reason string) (*entities.Order, *apperrors.APIError) {
@@ -301,6 +310,10 @@ func (s *Service) TrackingForUser(orderID string, userID string) ([]entities.Ord
 	if order.UserID != userID {
 		return nil, "", apperrors.ErrNotFound
 	}
+	order, _, apiErr := s.expireIfPastDue(order)
+	if apiErr != nil {
+		return nil, "", apiErr
+	}
 
 	events, err := s.repo.LoadTracking(orderID)
 	if err != nil {
@@ -316,6 +329,10 @@ func (s *Service) TrackingForAdmin(orderID string) ([]entities.OrderTrackingEven
 			return nil, "", apperrors.ErrNotFound
 		}
 		return nil, "", &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query tracking"}
+	}
+	order, _, apiErr := s.expireIfPastDue(order)
+	if apiErr != nil {
+		return nil, "", apiErr
 	}
 
 	events, err := s.repo.LoadTracking(orderID)
@@ -444,6 +461,72 @@ func (s *Service) MarkPaymentResult(orderID string, success bool, reason string)
 	}
 
 	return s.GetByIDAdmin(orderID)
+}
+
+func (s *Service) ExpireIfPastDue(orderID string) (*entities.Order, bool, *apperrors.APIError) {
+	order, err := s.repo.FindByID(orderID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, false, apperrors.ErrNotFound
+	}
+	if err != nil {
+		return nil, false, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query order"}
+	}
+	return s.expireIfPastDue(order)
+}
+
+func (s *Service) expireIfPastDue(order *entities.Order) (*entities.Order, bool, *apperrors.APIError) {
+	if order == nil {
+		return nil, false, nil
+	}
+	now := time.Now().UTC()
+	if order.OrderStatus != entities.OrderStatusPendingPayment || order.PaymentDueAt == nil || order.PaymentDueAt.After(now) {
+		return order, false, nil
+	}
+
+	updates := map[string]any{
+		"order_status":   entities.OrderStatusCancelled,
+		"payment_status": entities.PaymentStatusFailed,
+		"cancel_reason":  "payment timeout",
+		"updated_at":     now,
+	}
+
+	tracking := &entities.OrderTrackingEvent{
+		ID:          uuid.NewString(),
+		OrderID:     order.ID,
+		ToStatus:    entities.OrderStatusCancelled,
+		SourceType:  "SYSTEM",
+		Description: stringPtrOrNil("Order canceled due to payment timeout"),
+		OccurredAt:  now,
+	}
+
+	notification := &entities.Notification{
+		ID:        uuid.NewString(),
+		UserID:    order.UserID,
+		Channel:   "IN_APP",
+		EventType: "payment.timeout",
+		EventKey:  order.ID,
+		Title:     "Đơn hàng hết hạn thanh toán",
+		Content:   "Đơn hàng đã bị hủy do quá thời gian thanh toán",
+		Status:    entities.NotificationStatusSent,
+		IsRead:    false,
+		SentAt:    &now,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	err := s.repo.ExpirePendingPaymentTx(order.ID, updates, tracking, notification)
+	if err != nil {
+		if strings.Contains(err.Error(), "ORDER_NOT_EXPIRED") {
+			return order, false, nil
+		}
+		return nil, false, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to expire order"}
+	}
+
+	refreshed, err := s.repo.FindByID(order.ID)
+	if err != nil {
+		return nil, true, &apperrors.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Failed to query expired order"}
+	}
+	return refreshed, true, nil
 }
 
 func (s *Service) getOrder(orderID string) (*entities.Order, error) {

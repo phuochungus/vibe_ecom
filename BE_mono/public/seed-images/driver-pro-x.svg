@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1f1a"/>
+      <stop offset="100%" stop-color="#245447"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f2f6f7"/>
+      <stop offset="50%" stop-color="#bcc8cc"/>
+      <stop offset="100%" stop-color="#6f7d83"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="160" cy="120" r="90" fill="#ffffff12"/>
+  <circle cx="1040" cy="650" r="180" fill="#ffffff0d"/>
+  <rect x="0" y="620" width="1200" height="180" fill="#17362d"/>
+  <path d="M160 650c140-70 290-75 450-15 110 41 230 42 430-16v181H160z" fill="#2f6d59"/>
+  <g transform="translate(250 210) rotate(-10 350 170)">
+    <rect x="210" y="70" width="480" height="18" rx="9" fill="#2d3134"/>
+    <rect x="650" y="62" width="38" height="34" rx="8" fill="#101618"/>
+    <path d="M128 76c26-18 86-43 148-30 53 11 100 59 107 116-63 52-159 64-234 25-57-29-72-75-21-111z" fill="url(#metal)"/>
+    <path d="M164 91c34-17 85-22 128-4 34 14 60 43 66 71-48 34-118 43-175 19-48-21-57-56-19-86z" fill="#2f3b41"/>
+    <path d="M104 123c-82 82-151 188-207 320" stroke="#161b1d" stroke-width="16" stroke-linecap="round"/>
+    <path d="M0 430c10 21 25 38 43 48 18 10 34 9 48-1-1-27-15-49-39-67-23-17-42-14-52 20z" fill="#1f2629"/>
+  </g>
+  <text x="90" y="120" fill="#f5f7f2" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700">Driver Pro X</text>
+  <text x="92" y="176" fill="#d6e4dd" font-family="Arial, Helvetica, sans-serif" font-size="24">Distance-focused titanium driver for long tee shots</text>
+</svg>

@@ -26,6 +26,7 @@ type Repository interface {
 	List(filter ListFilter) ([]entities.Order, int64, error)
 	FindByID(orderID string) (*entities.Order, error)
 	CancelOrderTx(orderID string, userID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
+	ExpirePendingPaymentTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
 	UpdateOrderStatusTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
 	MarkPaymentResultTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error
 	LoadTracking(orderID string) ([]entities.OrderTrackingEvent, error)
@@ -179,6 +180,54 @@ func (r *GormRepository) CancelOrderTx(orderID string, userID string, updates ma
 				return err
 			}
 		}
+		return nil
+	})
+}
+
+func (r *GormRepository) ExpirePendingPaymentTx(orderID string, updates map[string]any, tracking *entities.OrderTrackingEvent, notification *entities.Notification) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var orderEntity entities.Order
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", orderID).
+			Take(&orderEntity).Error; err != nil {
+			return err
+		}
+
+		if orderEntity.OrderStatus != entities.OrderStatusPendingPayment {
+			return errors.New("ORDER_NOT_EXPIRED")
+		}
+		if orderEntity.PaymentDueAt == nil || tracking == nil || orderEntity.PaymentDueAt.After(tracking.OccurredAt) {
+			return errors.New("ORDER_NOT_EXPIRED")
+		}
+
+		if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		items := make([]entities.OrderItem, 0)
+		if err := tx.Where("order_id = ?", orderID).Find(&items).Error; err != nil {
+			return err
+		}
+		for _, item := range items {
+			if err := tx.Model(&entities.Product{}).
+				Where("id = ?", item.ProductID).
+				Updates(map[string]any{
+					"stock":      gorm.Expr("stock + ?", item.Quantity),
+					"updated_at": tracking.OccurredAt,
+				}).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Create(tracking).Error; err != nil {
+			return err
+		}
+		if notification != nil {
+			if err := upsertNotification(tx, notification); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 }

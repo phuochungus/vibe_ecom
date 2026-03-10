@@ -62,6 +62,7 @@ func NewRouter(health *HealthHandler, modules RouteModules) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), observability.CorrelationID(), middleware.RequestID())
 
+	r.Static("/assets", "public")
 	registerDocsRoutes(r)
 
 	r.GET("/healthz", health.Health)

@@ -13,7 +13,7 @@ export type OrderStatus =
   | 'COMPLETED'
   | 'CANCELLED'
 
-export type PaymentMethod = 'COD' | 'MOMO'
+export type PaymentMethod = 'COD' | 'PAYOS'
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED'
 export type PaymentTxnState = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED'
 export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED'
@@ -65,6 +65,13 @@ export interface OrderItem {
   line_total: string
 }
 
+export interface OrderTrackingEvent {
+  status: OrderStatus
+  source_type: 'SYSTEM' | 'USER' | 'ADMIN' | 'PAYMENT_GATEWAY' | 'CARRIER'
+  occurred_at: string
+  description?: string
+}
+
 export interface OrderStatusHistory {
   id: string
   from_status: OrderStatus | null
@@ -102,6 +109,12 @@ export interface Order {
   created_at: string
   items?: OrderItem[]
   status_history?: OrderStatusHistory[]
+}
+
+export interface OrderTracking {
+  order_id: string
+  current_status: OrderStatus
+  timeline: OrderTrackingEvent[]
 }
 
 // --- Payment ---
@@ -164,12 +177,15 @@ export interface LoginResponse {
 export interface Notification {
   id: string
   user_id: string
-  type: string
+  channel: string
+  event_type: string
+  event_key: string
   title: string
-  message: string
-  data?: Record<string, unknown>
-  is_read: boolean
+  content: string
+  status: NotificationStatus
+  read: boolean
   created_at: string
+  sent_at?: string
 }
 
 // --- Cart (local state, not API) ---
@@ -185,15 +201,17 @@ export interface OrderCreatePayload {
     product_id: string
     quantity: number
   }[]
-  payment_method: PaymentMethod
-  shipping_recipient_name: string
-  shipping_phone: string
-  shipping_line1: string
-  shipping_line2?: string
-  shipping_ward?: string
-  shipping_district?: string
-  shipping_city: string
-  shipping_province?: string
-  shipping_country_code: string
+  shipping_address: {
+    recipient_name: string
+    recipient_phone: string
+    line1: string
+    line2?: string
+    ward?: string
+    district?: string
+    city: string
+    province?: string
+    postal_code?: string
+    country_code: string
+  }
   customer_note?: string
 }

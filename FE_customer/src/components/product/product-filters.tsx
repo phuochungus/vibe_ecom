@@ -1,18 +1,24 @@
 import { Card, Slider, Select, InputNumber, Button, Space, Divider } from "antd";
 import { useState } from "react";
 
+type ProductFilterPayload = {
+    min_price?: number;
+    max_price?: number;
+    sort?: "price_asc" | "price_desc" | "newest" | "oldest";
+};
+
 interface ProductFiltersProps {
-    onFilterChange: (filters: { minPrice?: number; maxPrice?: number; sort?: string }) => void;
+    onFilterChange: (filters: ProductFilterPayload) => void;
 }
 
 export default function ProductFilters({ onFilterChange }: ProductFiltersProps) {
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
-    const [sort, setSort] = useState<string>();
+    const [sort, setSort] = useState<ProductFilterPayload["sort"]>();
 
     const handleApply = () => {
         onFilterChange({
-            minPrice: priceRange[0],
-            maxPrice: priceRange[1],
+            min_price: priceRange[0],
+            max_price: priceRange[1],
             sort,
         });
     };

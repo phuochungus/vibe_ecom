@@ -1,6 +1,8 @@
 package http
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -46,8 +48,10 @@ func (h *Handler) CreatePayment(c *gin.Context) {
 
 	var req dto.CreatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
-		return
+		if !errors.Is(err, io.EOF) {
+			response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body", nil)
+			return
+		}
 	}
 
 	output, apiErr := h.payments.Create(paysvc.CreatePaymentInput{

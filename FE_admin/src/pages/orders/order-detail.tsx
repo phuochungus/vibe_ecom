@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -51,6 +52,7 @@ export default function OrderDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [nextStatus, setNextStatus] = useState<OrderStatus | ''>('')
+  const [statusReason, setStatusReason] = useState('')
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['admin-order', id],
@@ -65,18 +67,25 @@ export default function OrderDetailPage() {
   })
 
   const statusMutation = useMutation({
-    mutationFn: () => ordersApi.updateStatus(id!, nextStatus as OrderStatus),
+    mutationFn: () => ordersApi.updateStatus(id!, nextStatus as OrderStatus, statusReason || undefined),
     onSuccess: () => {
       toast.success(`Đã chuyển trạng thái sang ${formatOrderStatus(nextStatus as OrderStatus)}`)
       queryClient.invalidateQueries({ queryKey: ['admin-order', id] })
       queryClient.invalidateQueries({ queryKey: ['order-tracking', id] })
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
       setNextStatus('')
+      setStatusReason('')
     },
     onError: () => toast.error('Chuyển trạng thái thất bại, vui lòng thử lại'),
   })
 
   const validNextStatuses = order ? ORDER_TRANSITIONS[order.order_status] : []
+  const trackingTimeline = tracking?.timeline?.map((event) => ({
+    status: event.to_status ?? event.status ?? order?.order_status ?? 'NEW',
+    actor: event.changed_by_type ?? event.source_type ?? 'SYSTEM',
+    note: event.change_reason ?? event.description,
+    occurred_at: event.occurred_at,
+  })) ?? []
 
   if (isLoading) {
     return (
@@ -114,7 +123,7 @@ export default function OrderDetailPage() {
           <AlertDialog>
             <div className="flex items-center gap-2">
               <Select value={nextStatus} onValueChange={(v: string) => setNextStatus(v as OrderStatus)}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48" data-testid="order-status-select">
                   <SelectValue placeholder="Chuyển trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
@@ -126,7 +135,7 @@ export default function OrderDetailPage() {
                 </SelectContent>
               </Select>
               <AlertDialogTrigger asChild>
-                <Button disabled={!nextStatus} size="sm">
+                <Button disabled={!nextStatus} size="sm" data-testid="order-status-submit">
                   Cập nhật
                 </Button>
               </AlertDialogTrigger>
@@ -140,6 +149,15 @@ export default function OrderDetailPage() {
                   <strong>{nextStatus ? formatOrderStatus(nextStatus as OrderStatus) : ''}</strong>?
                 </AlertDialogDescription>
               </AlertDialogHeader>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Lý do cập nhật</p>
+                <Textarea
+                  value={statusReason}
+                  onChange={(event) => setStatusReason(event.target.value)}
+                  placeholder="verified payment / handed to carrier / ghi chú vận hành..."
+                  data-testid="order-status-reason"
+                />
+              </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Hủy</AlertDialogCancel>
                 <AlertDialogAction
@@ -165,8 +183,8 @@ export default function OrderDetailPage() {
           {order.items?.map((item) => (
             <div key={item.id} className="flex items-center justify-between text-sm">
               <div>
-                <p className="font-medium">{item.product_name_snapshot}</p>
-                <p className="text-xs text-muted-foreground">SKU: {item.product_sku_snapshot}</p>
+                <p className="font-medium">{item.product_name_snapshot ?? item.name ?? 'Sản phẩm'}</p>
+                <p className="text-xs text-muted-foreground">SKU: {item.product_sku_snapshot ?? item.sku ?? '—'}</p>
               </div>
               <div className="text-right">
                 <p>{formatCurrency(item.unit_price)} × {item.quantity}</p>
@@ -233,18 +251,18 @@ export default function OrderDetailPage() {
           ) : (
             <div className="relative pl-6 space-y-4">
               <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
-              {tracking?.timeline?.map((event, idx) => {
-                const Icon = STATUS_ICONS[event.to_status] ?? Circle
+              {trackingTimeline.map((event, idx) => {
+                const Icon = STATUS_ICONS[event.status] ?? Circle
                 return (
                   <div key={idx} className="relative flex gap-4 text-sm">
                     <div className="absolute -left-4 bg-background">
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{formatOrderStatus(event.to_status)}</p>
+                      <p className="font-medium">{formatOrderStatus(event.status)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(event.occurred_at), 'HH:mm dd/MM/yyyy')} · {event.changed_by_type}
-                        {event.change_reason ? ` · ${event.change_reason}` : ''}
+                        {format(new Date(event.occurred_at), 'HH:mm dd/MM/yyyy')} · {event.actor}
+                        {event.note ? ` · ${event.note}` : ''}
                       </p>
                     </div>
                   </div>

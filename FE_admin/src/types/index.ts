@@ -57,8 +57,10 @@ export type ProductUpdatePayload = Partial<ProductCreatePayload>
 export interface OrderItem {
   id: string
   product_id: string
-  product_sku_snapshot: string
-  product_name_snapshot: string
+  product_sku_snapshot?: string
+  product_name_snapshot?: string
+  sku?: string
+  name?: string
   unit_price: string
   quantity: number
   line_total: string
@@ -71,6 +73,9 @@ export interface OrderStatusHistory {
   changed_by_type: 'SYSTEM' | 'USER' | 'ADMIN' | 'PAYMENT_GATEWAY' | 'CARRIER'
   change_reason?: string
   occurred_at: string
+  status?: OrderStatus
+  source_type?: 'SYSTEM' | 'USER' | 'ADMIN' | 'PAYMENT_GATEWAY' | 'CARRIER'
+  description?: string
 }
 
 export interface Order {

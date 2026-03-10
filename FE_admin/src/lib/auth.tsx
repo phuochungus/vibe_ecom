@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { api } from "./api";
 import type { User, LoginResponse } from "@/types";
@@ -27,6 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Backend always returns envelope: { success, data: LoginResponse, meta, ... }
         const res = await api.post<{ success: boolean; data: LoginResponse }>("/auth/login", { identifier, password });
         const payload = res.data.data;
+        if (payload.user.role !== "ADMIN") {
+            throw new Error("FORBIDDEN_ADMIN_ONLY");
+        }
         localStorage.setItem("access_token", payload.access_token);
         localStorage.setItem("refresh_token", payload.refresh_token);
         localStorage.setItem("auth_user", JSON.stringify(payload.user));

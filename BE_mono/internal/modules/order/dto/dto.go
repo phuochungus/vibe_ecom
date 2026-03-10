@@ -47,6 +47,8 @@ type OrderSummaryDTO struct {
 	DiscountAmount string `json:"discount_amount"`
 	ShippingFee    string `json:"shipping_fee"`
 	TotalAmount    string `json:"total_amount"`
+	ShippingRecipientName string `json:"shipping_recipient_name,omitempty"`
+	ShippingPhone         string `json:"shipping_phone,omitempty"`
 	PlacedAt       string `json:"placed_at"`
 	PaymentDueAt   string `json:"payment_due_at,omitempty"`
 }
@@ -62,8 +64,18 @@ type OrderItemDTO struct {
 
 type OrderDetailDTO struct {
 	OrderSummaryDTO
-	Items    []OrderItemDTO `json:"items"`
-	Payments []any          `json:"payments"`
+	CustomerNote        string         `json:"customer_note,omitempty"`
+	CancelReason        string         `json:"cancel_reason,omitempty"`
+	ShippingLine1       string         `json:"shipping_line1"`
+	ShippingLine2       string         `json:"shipping_line2,omitempty"`
+	ShippingWard        string         `json:"shipping_ward,omitempty"`
+	ShippingDistrict    string         `json:"shipping_district,omitempty"`
+	ShippingCity        string         `json:"shipping_city"`
+	ShippingProvince    string         `json:"shipping_province,omitempty"`
+	ShippingPostalCode  string         `json:"shipping_postal_code,omitempty"`
+	ShippingCountryCode string         `json:"shipping_country_code"`
+	Items               []OrderItemDTO `json:"items"`
+	Payments            []any          `json:"payments"`
 }
 
 type ShippingAddress struct {

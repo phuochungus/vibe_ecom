@@ -26,6 +26,8 @@ func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
 }
 
 func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
+	rg.GET("/products", h.AdminListProducts)
+	rg.GET("/products/:product_id", h.AdminGetProduct)
 	rg.POST("/products", h.AdminCreateProduct)
 	rg.PATCH("/products/:product_id", h.AdminUpdateProduct)
 	rg.DELETE("/products/:product_id", h.AdminDeleteProduct)
@@ -57,6 +59,38 @@ func (h *Handler) ListProducts(c *gin.Context) {
 func (h *Handler) GetProduct(c *gin.Context) {
 	productID := c.Param("product_id")
 	p, apiErr := h.products.GetByID(productID, false)
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+	response.OK(c, p)
+}
+
+func (h *Handler) AdminListProducts(c *gin.Context) {
+	min := parseIntPtr(c.Query("min_price"))
+	max := parseIntPtr(c.Query("max_price"))
+
+	page := parseIntDefault(c.Query("page"), 1)
+	pageSize := parseIntDefault(c.Query("page_size"), 20)
+
+	out := h.products.List(prodsvc.ListInput{
+		Query:     c.Query("q"),
+		Status:    c.Query("status"),
+		Min:       min,
+		Max:       max,
+		Page:      page,
+		PageSize:  pageSize,
+		SortBy:    c.Query("sort"),
+		SortOrder: c.Query("order"),
+		AdminView: true,
+	})
+
+	response.OK(c, out)
+}
+
+func (h *Handler) AdminGetProduct(c *gin.Context) {
+	productID := c.Param("product_id")
+	p, apiErr := h.products.GetByID(productID, true)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return

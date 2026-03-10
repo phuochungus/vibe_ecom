@@ -35,6 +35,7 @@ func (h *Handler) RegisterUser(rg *gin.RouterGroup) {
 func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 	rg.GET("/orders", h.AdminListOrders)
 	rg.GET("/orders/:order_id", h.AdminGetOrder)
+	rg.GET("/orders/:order_id/tracking", h.AdminGetTracking)
 	rg.PATCH("/orders/:order_id/status", h.AdminUpdateOrderStatus)
 }
 
@@ -132,7 +133,7 @@ func (h *Handler) GetOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, order)
+	response.OK(c, orderDetailResponse(order))
 }
 
 func (h *Handler) CancelOrder(c *gin.Context) {
@@ -215,7 +216,33 @@ func (h *Handler) AdminGetOrder(c *gin.Context) {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
 	}
-	response.OK(c, order)
+	response.OK(c, orderDetailResponse(order))
+}
+
+func (h *Handler) AdminGetTracking(c *gin.Context) {
+	timeline, current, apiErr := h.orders.TrackingForAdmin(c.Param("order_id"))
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+	items := make([]gin.H, 0, len(timeline))
+	for _, e := range timeline {
+		description := ""
+		if e.Description != nil {
+			description = *e.Description
+		}
+		items = append(items, gin.H{
+			"status":      e.ToStatus,
+			"source_type": e.SourceType,
+			"occurred_at": e.OccurredAt.Format(time.RFC3339Nano),
+			"description": description,
+		})
+	}
+	response.OK(c, gin.H{
+		"order_id":       c.Param("order_id"),
+		"current_status": current,
+		"timeline":       items,
+	})
 }
 
 func (h *Handler) AdminUpdateOrderStatus(c *gin.Context) {
@@ -251,10 +278,55 @@ func orderSummaryResponse(o *entities.Order) dto.OrderSummaryDTO {
 		DiscountAmount: utils.ToAmountString(o.DiscountAmount),
 		ShippingFee:    utils.ToAmountString(o.ShippingFee),
 		TotalAmount:    utils.ToAmountString(o.TotalAmount),
+		ShippingRecipientName: o.ShippingRecipientName,
+		ShippingPhone:         o.ShippingPhone,
 		PlacedAt:       o.PlacedAt.Format(time.RFC3339Nano),
 	}
 	if o.PaymentDueAt != nil {
 		result.PaymentDueAt = o.PaymentDueAt.Format(time.RFC3339Nano)
+	}
+	return result
+}
+
+func orderDetailResponse(o *entities.Order) dto.OrderDetailDTO {
+	result := dto.OrderDetailDTO{
+		OrderSummaryDTO:      orderSummaryResponse(o),
+		ShippingLine1:        o.ShippingLine1,
+		ShippingCity:         o.ShippingCity,
+		ShippingCountryCode:  o.ShippingCountryCode,
+		Items:                make([]dto.OrderItemDTO, 0, len(o.Items)),
+		Payments:             make([]any, 0, len(o.PaymentTransactions)),
+	}
+	if o.CustomerNote != nil {
+		result.CustomerNote = *o.CustomerNote
+	}
+	if o.CancelReason != nil {
+		result.CancelReason = *o.CancelReason
+	}
+	if o.ShippingLine2 != nil {
+		result.ShippingLine2 = *o.ShippingLine2
+	}
+	if o.ShippingWard != nil {
+		result.ShippingWard = *o.ShippingWard
+	}
+	if o.ShippingDistrict != nil {
+		result.ShippingDistrict = *o.ShippingDistrict
+	}
+	if o.ShippingProvince != nil {
+		result.ShippingProvince = *o.ShippingProvince
+	}
+	if o.ShippingPostalCode != nil {
+		result.ShippingPostalCode = *o.ShippingPostalCode
+	}
+	for _, item := range o.Items {
+		result.Items = append(result.Items, dto.OrderItemDTO{
+			ProductID: item.ProductID,
+			SKU:       item.SKU,
+			Name:      item.Name,
+			UnitPrice: utils.ToAmountString(item.UnitPrice),
+			Quantity:  item.Quantity,
+			LineTotal: utils.ToAmountString(item.LineTotal),
+		})
 	}
 	return result
 }

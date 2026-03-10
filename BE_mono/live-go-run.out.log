@@ -1,0 +1,48 @@
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /assets/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (5 handlers)
+[GIN-debug] HEAD   /assets/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (5 handlers)
+[GIN-debug] GET    /docs                     --> golf-store/be-mono/internal/app/server.registerDocsRoutes.func1 (5 handlers)
+[GIN-debug] GET    /docs/                    --> golf-store/be-mono/internal/app/server.registerDocsRoutes.func2 (5 handlers)
+[GIN-debug] GET    /openapi.yaml             --> golf-store/be-mono/internal/app/server.registerDocsRoutes.func3 (5 handlers)
+[GIN-debug] GET    /healthz                  --> golf-store/be-mono/internal/app/server.(*HealthHandler).Health-fm (5 handlers)
+[GIN-debug] GET    /readyz                   --> golf-store/be-mono/internal/app/server.(*HealthHandler).Ready-fm (5 handlers)
+[GIN-debug] POST   /api/v1/auth/login        --> golf-store/be-mono/internal/modules/auth/http.(*Handler).Login-fm (5 handlers)
+[GIN-debug] POST   /api/v1/auth/refresh      --> golf-store/be-mono/internal/modules/auth/http.(*Handler).RefreshToken-fm (5 handlers)
+[GIN-debug] GET    /api/v1/products          --> golf-store/be-mono/internal/modules/product/http.(*Handler).ListProducts-fm (5 handlers)
+[GIN-debug] GET    /api/v1/products/:product_id --> golf-store/be-mono/internal/modules/product/http.(*Handler).GetProduct-fm (5 handlers)
+[GIN-debug] POST   /api/v1/webhooks/payments/:provider --> golf-store/be-mono/internal/modules/payment/http.(*Handler).ReceivePaymentWebhook-fm (5 handlers)
+[GIN-debug] POST   /api/v1/auth/logout       --> golf-store/be-mono/internal/modules/auth/http.(*Handler).Logout-fm (6 handlers)
+[GIN-debug] GET    /api/v1/me                --> golf-store/be-mono/internal/modules/auth/http.(*Handler).Me-fm (6 handlers)
+[GIN-debug] POST   /api/v1/orders            --> golf-store/be-mono/internal/modules/order/http.(*Handler).CreateOrder-fm (6 handlers)
+[GIN-debug] GET    /api/v1/orders            --> golf-store/be-mono/internal/modules/order/http.(*Handler).ListOrders-fm (6 handlers)
+[GIN-debug] GET    /api/v1/orders/:order_id  --> golf-store/be-mono/internal/modules/order/http.(*Handler).GetOrder-fm (6 handlers)
+[GIN-debug] POST   /api/v1/orders/:order_id/cancel --> golf-store/be-mono/internal/modules/order/http.(*Handler).CancelOrder-fm (6 handlers)
+[GIN-debug] GET    /api/v1/orders/:order_id/tracking --> golf-store/be-mono/internal/modules/order/http.(*Handler).GetTracking-fm (6 handlers)
+[GIN-debug] POST   /api/v1/orders/:order_id/payments --> golf-store/be-mono/internal/modules/payment/http.(*Handler).CreatePayment-fm (6 handlers)
+[GIN-debug] GET    /api/v1/orders/:order_id/payments --> golf-store/be-mono/internal/modules/payment/http.(*Handler).ListPayments-fm (6 handlers)
+[GIN-debug] GET    /api/v1/notifications     --> golf-store/be-mono/internal/modules/notification/http.(*Handler).ListNotifications-fm (6 handlers)
+[GIN-debug] PATCH  /api/v1/notifications/:notification_id/read --> golf-store/be-mono/internal/modules/notification/http.(*Handler).MarkRead-fm (6 handlers)
+[GIN-debug] PATCH  /api/v1/notifications/read-all --> golf-store/be-mono/internal/modules/notification/http.(*Handler).MarkReadAll-fm (6 handlers)
+[GIN-debug] GET    /api/v1/users/me          --> golf-store/be-mono/internal/modules/user/http.(*Handler).GetCurrentUser-fm (6 handlers)
+[GIN-debug] GET    /api/v1/users/:id         --> golf-store/be-mono/internal/modules/user/http.(*Handler).GetUserByID-fm (6 handlers)
+[GIN-debug] GET    /api/v1/admin/products    --> golf-store/be-mono/internal/modules/product/http.(*Handler).AdminListProducts-fm (7 handlers)
+[GIN-debug] GET    /api/v1/admin/products/:product_id --> golf-store/be-mono/internal/modules/product/http.(*Handler).AdminGetProduct-fm (7 handlers)
+[GIN-debug] POST   /api/v1/admin/products    --> golf-store/be-mono/internal/modules/product/http.(*Handler).AdminCreateProduct-fm (7 handlers)
+[GIN-debug] PATCH  /api/v1/admin/products/:product_id --> golf-store/be-mono/internal/modules/product/http.(*Handler).AdminUpdateProduct-fm (7 handlers)
+[GIN-debug] DELETE /api/v1/admin/products/:product_id --> golf-store/be-mono/internal/modules/product/http.(*Handler).AdminDeleteProduct-fm (7 handlers)
+[GIN-debug] GET    /api/v1/admin/orders      --> golf-store/be-mono/internal/modules/order/http.(*Handler).AdminListOrders-fm (7 handlers)
+[GIN-debug] GET    /api/v1/admin/orders/:order_id --> golf-store/be-mono/internal/modules/order/http.(*Handler).AdminGetOrder-fm (7 handlers)
+[GIN-debug] GET    /api/v1/admin/orders/:order_id/tracking --> golf-store/be-mono/internal/modules/order/http.(*Handler).AdminGetTracking-fm (7 handlers)
+[GIN-debug] PATCH  /api/v1/admin/orders/:order_id/status --> golf-store/be-mono/internal/modules/order/http.(*Handler).AdminUpdateOrderStatus-fm (7 handlers)
+[GIN-debug] GET    /api/v1/admin/revenue/summary --> golf-store/be-mono/internal/modules/reporting/http.(*Handler).Summary-fm (7 handlers)
+[GIN-debug] GET    /api/v1/admin/revenue/orders --> golf-store/be-mono/internal/modules/reporting/http.(*Handler).RevenueOrders-fm (7 handlers)
+[GIN] 2026/03/10 - 22:50:35 | 200 |       417.6µs |       127.0.0.1 | GET      "/healthz"
+[GIN] 2026/03/10 - 22:50:45 | 200 |      7.6974ms |       127.0.0.1 | GET      "/api/v1/products?page=1&page_size=3"
+[GIN] 2026/03/10 - 22:50:46 | 200 |     58.0094ms |       127.0.0.1 | GET      "/assets/seed-images/driver-pro-x.svg"
+[GIN] 2026/03/10 - 22:50:50 | 200 |      3.7779ms |             ::1 | GET      "/api/v1/products?status=ACTIVE&page=1&page_size=12"
+[GIN] 2026/03/10 - 22:50:50 | 200 |       510.4µs |       127.0.0.1 | GET      "/assets/seed-images/driver-pro-x.svg"
+[GIN] 2026/03/10 - 22:50:50 | 200 |            0s |       127.0.0.1 | GET      "/assets/seed-images/iron-tour-6pcs.svg"
+[GIN] 2026/03/10 - 22:50:50 | 200 |            0s |       127.0.0.1 | GET      "/assets/seed-images/putter-classic-blade.svg"

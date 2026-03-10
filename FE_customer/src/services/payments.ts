@@ -6,10 +6,18 @@ export interface PaymentInitiateResponse {
 }
 
 export const paymentsApi = {
-  initiate: async (orderId: string, idempotencyKey: string) => {
+  initiate: async (
+    orderId: string,
+    payload: {
+      provider: 'PAYOS'
+      return_url: string
+      cancel_url: string
+    },
+    idempotencyKey: string
+  ) => {
     const { data } = await api.post<{ success: boolean; data: PaymentInitiateResponse }>(
       `/orders/${orderId}/payments`,
-      undefined,
+      payload,
       {
         headers: {
           'Idempotency-Key': idempotencyKey,

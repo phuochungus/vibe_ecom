@@ -23,7 +23,7 @@ export default function ProductListPage() {
     queryFn: () => productsApi.list(filters),
   })
 
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: Partial<ProductListParams>) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }))
   }
 

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2126"/>
+      <stop offset="100%" stop-color="#4b3b2f"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f4f6f7"/>
+      <stop offset="55%" stop-color="#bfc7ca"/>
+      <stop offset="100%" stop-color="#6d767b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="0" y="610" width="1200" height="190" fill="#61503d"/>
+  <path d="M120 670c180-65 354-61 509 10 98 44 252 36 451-28v148H120z" fill="#8d734f"/>
+  <g transform="translate(190 120)">
+    <g transform="rotate(-16 290 250)">
+      <rect x="365" y="48" width="420" height="12" rx="6" fill="#1d2225"/>
+      <path d="M250 140c24-23 63-40 105-46 70-10 145 16 179 68-26 49-88 85-164 94-58 7-111-5-137-32-22-24-14-53 17-84z" fill="url(#steel)"/>
+      <path d="M298 147c24-16 61-29 97-31 40-2 80 9 112 30-18 35-62 60-114 67-43 6-85-1-109-17-30-21-24-36 14-49z" fill="#d6dde0"/>
+      <path d="M241 173c-50 85-103 176-160 272" stroke="#161a1d" stroke-width="14" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(130 80) rotate(-12 290 250)">
+      <rect x="365" y="48" width="420" height="12" rx="6" fill="#1d2225"/>
+      <path d="M250 140c24-23 63-40 105-46 70-10 145 16 179 68-26 49-88 85-164 94-58 7-111-5-137-32-22-24-14-53 17-84z" fill="url(#steel)"/>
+      <path d="M298 147c24-16 61-29 97-31 40-2 80 9 112 30-18 35-62 60-114 67-43 6-85-1-109-17-30-21-24-36 14-49z" fill="#d6dde0"/>
+      <path d="M241 173c-50 85-103 176-160 272" stroke="#161a1d" stroke-width="14" stroke-linecap="round"/>
+    </g>
+  </g>
+  <text x="92" y="110" fill="#f7f2e8" font-family="Arial, Helvetica, sans-serif" font-size="50" font-weight="700">Iron Set Tour 6pcs</text>
+  <text x="94" y="164" fill="#e1d2c0" font-family="Arial, Helvetica, sans-serif" font-size="24">Forged irons tuned for tight dispersion and controlled flight</text>
+</svg>

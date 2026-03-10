@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { Order, OrderCreatePayload, OrderStatusHistory, PaginatedResponse } from '@/types'
+import type { Order, OrderCreatePayload, OrderTracking, PaginatedResponse } from '@/types'
 
 export interface OrderListParams {
   page?: number
@@ -34,7 +34,7 @@ export const ordersApi = {
   },
 
   getTracking: async (id: string) => {
-    const { data } = await api.get<{ success: boolean; data: OrderStatusHistory[] }>(`/orders/${id}/tracking`)
+    const { data } = await api.get<{ success: boolean; data: OrderTracking }>(`/orders/${id}/tracking`)
     return data.data
   },
 

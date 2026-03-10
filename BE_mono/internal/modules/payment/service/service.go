@@ -54,6 +54,14 @@ func (s *Service) Create(input CreatePaymentInput) (*CreatePaymentOutput, *apper
 	if order.UserID != input.UserID {
 		return nil, apperrors.ErrNotFound
 	}
+	if _, expired, apiErr := s.orders.ExpireIfPastDue(input.OrderID); apiErr != nil {
+		return nil, apiErr
+	} else if expired {
+		return nil, &apperrors.APIError{Status: http.StatusConflict, Code: "PAYMENT_TIMEOUT", Message: "Order payment window has expired"}
+	}
+	if order.OrderStatus != entities.OrderStatusPendingPayment {
+		return nil, &apperrors.APIError{Status: http.StatusConflict, Code: "INVALID_REQUEST", Message: "Order is not awaiting payment"}
+	}
 
 	existing, err := s.repo.FindPaymentByIdempotency(input.OrderID, idemKey)
 	if err == nil && existing != nil && existing.ID != "" {
