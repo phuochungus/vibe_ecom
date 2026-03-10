@@ -12,10 +12,10 @@ export const productsApi = {
     sort?: string
     order?: string
   }) =>
-    api.get<{ data: PaginatedResponse<Product> }>('/products', { params }).then((r) => r.data.data),
+    api.get<{ data: PaginatedResponse<Product> }>('/admin/products', { params }).then((r) => r.data.data),
 
   get: (id: string) =>
-    api.get<{ data: Product }>(`/products/${id}`).then((r) => r.data.data),
+    api.get<{ data: Product }>(`/admin/products/${id}`).then((r) => r.data.data),
 
   create: (payload: ProductCreatePayload) =>
     api.post<{ data: Product }>('/admin/products', payload).then((r) => r.data.data),

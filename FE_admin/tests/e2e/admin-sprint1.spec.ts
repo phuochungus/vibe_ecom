@@ -126,15 +126,15 @@ test.beforeEach(async ({ page }) => {
     })
   })
 
-  await page.route('**/api/v1/products**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: productList }),
-    })
-  })
-
   await page.route('**/api/v1/admin/products', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: productList }),
+      })
+      return
+    }
     if (route.request().method() === 'POST') {
       const payload = JSON.parse(route.request().postData() || '{}')
       await route.fulfill({
