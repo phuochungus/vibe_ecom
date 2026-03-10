@@ -243,7 +243,7 @@ export default function OrderDetailPage() {
                 <CardHeader>
                     <CardTitle className="text-base">Lịch sử trạng thái</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-2">
                     {loadingTracking ? (
                         <div className="space-y-3">
                             {Array.from({ length: 3 }).map((_, i) => (
@@ -251,18 +251,18 @@ export default function OrderDetailPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="relative pl-6 space-y-4">
-                            <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
+                        <div className="relative pl-8 pt-1 space-y-4">
+                            <div className="absolute left-3 top-2 bottom-2 w-px bg-border/70" />
                             {trackingTimeline.map((event, idx) => {
                                 const Icon = STATUS_ICONS[event.status] ?? Circle;
                                 return (
-                                    <div key={idx} className="relative flex gap-4 text-sm">
-                                        <div className="absolute -left-4 bg-background">
+                                    <div key={idx} className="relative px-4 py-2">
+                                        <div className="absolute -left-7 top-2.5 bg-background px-1">
                                             <Icon className="h-4 w-4 text-primary" />
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-medium">{formatOrderStatus(event.status)}</p>
-                                            <p className="text-xs text-muted-foreground">
+                                        <div className="space-y-1">
+                                            <p className="font-medium leading-none tracking-tight">{formatOrderStatus(event.status)}</p>
+                                            <p className="text-xs leading-6 text-muted-foreground">
                                                 {format(new Date(event.occurred_at), "HH:mm dd/MM/yyyy")} ·{" "}
                                                 {event.actor}
                                                 {event.note ? ` · ${event.note}` : ""}
