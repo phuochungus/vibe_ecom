@@ -119,7 +119,7 @@ export default function CheckoutPage() {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <Title level={3}>Giỏ hàng trống</Title>
-        <Button type="primary" onClick={() => navigate('/products')}>
+        <Button type="primary" onClick={() => navigate('/products')} data-testid="checkout-empty-cart-button">
           Tiếp tục mua sắm
         </Button>
       </div>
@@ -169,7 +169,7 @@ export default function CheckoutPage() {
                 Quay lại
               </Button>
             )}
-            <Button type="primary" size="large" onClick={handleNext} loading={isLoading}>
+            <Button type="primary" size="large" onClick={handleNext} loading={isLoading} data-testid="checkout-next-button">
               {currentStep === 0 ? 'Tiếp tục' : paymentMethod === 'COD' ? 'Đặt hàng' : 'Thanh toán'}
             </Button>
           </Space>

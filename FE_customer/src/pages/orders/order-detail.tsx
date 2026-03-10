@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Typography, Card, Descriptions, List, Tag, Space, Button, Spin, Breadcrumb, Row, Col, Alert } from "antd";
 import { HomeOutlined } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ordersApi } from "@/services/orders";
+import { paymentsApi } from "@/services/payments";
 import { formatCurrency, formatOrderStatus, getOrderStatusColor, formatDateTime, canCancelOrder } from "@/lib/utils";
 import OrderTimeline from "@/components/order/order-timeline";
 import CancelOrderModal from "@/components/order/cancel-order-modal";
+import { getErrorMessage } from "@/lib/api";
 
 const { Title, Text } = Typography;
 
@@ -26,6 +28,26 @@ export default function OrderDetailPage() {
         enabled: !!id,
     });
 
+    const retryPaymentMutation = useMutation({
+        mutationFn: async () => {
+            const orderId = id!;
+            const idempotencyKey = crypto.randomUUID();
+
+            return paymentsApi.initiate(
+                orderId,
+                {
+                    provider: "PAYOS",
+                    return_url: `${window.location.origin}/checkout/return?orderId=${orderId}&status=PAID`,
+                    cancel_url: `${window.location.origin}/checkout/cancel?orderId=${orderId}`,
+                },
+                idempotencyKey
+            );
+        },
+        onSuccess: (payment) => {
+            window.location.href = payment.checkout_url;
+        },
+    });
+
     if (isLoading) {
         return (
             <div style={{ textAlign: "center", padding: 48 }}>
@@ -43,6 +65,7 @@ export default function OrderDetailPage() {
     }
 
     const showCancelButton = canCancelOrder(order.order_status);
+    const showRetryPayment = order.order_status === "PENDING_PAYMENT";
 
     return (
         <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
@@ -171,10 +194,30 @@ export default function OrderDetailPage() {
 
                         {/* Actions */}
                         {showCancelButton && (
-                            <div>
-                                <Button danger onClick={() => setCancelModalOpen(true)}>
-                                    Hủy đơn hàng
-                                </Button>
+                            <div data-testid="order-detail-actions">
+                                <Space wrap>
+                                    {showRetryPayment && (
+                                        <Button
+                                            type="primary"
+                                            loading={retryPaymentMutation.isPending}
+                                            onClick={() => retryPaymentMutation.mutate()}
+                                            data-testid="retry-payment-button"
+                                        >
+                                            Thanh toán lại
+                                        </Button>
+                                    )}
+                                    <Button danger onClick={() => setCancelModalOpen(true)} data-testid="cancel-order-button">
+                                        Hủy đơn hàng
+                                    </Button>
+                                </Space>
+                                {retryPaymentMutation.isError && (
+                                    <Alert
+                                        type="error"
+                                        showIcon
+                                        style={{ marginTop: 12 }}
+                                        message={getErrorMessage(retryPaymentMutation.error)}
+                                    />
+                                )}
                             </div>
                         )}
                     </Space>

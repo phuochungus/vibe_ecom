@@ -28,7 +28,7 @@ export default function CartPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-      <Title level={2}>Giỏ hàng của bạn</Title>
+      <Title level={2} data-testid="cart-title">Giỏ hàng của bạn</Title>
 
       <Row gutter={[24, 24]}>
         {/* Cart Items */}

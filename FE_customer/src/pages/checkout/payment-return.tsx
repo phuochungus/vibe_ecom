@@ -30,6 +30,7 @@ export default function PaymentReturnPage() {
     return (
       <div style={{ padding: 48 }}>
         <Result
+          data-testid="payment-return-result"
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
           status="success"
           title="Đặt hàng thành công!"
@@ -51,6 +52,7 @@ export default function PaymentReturnPage() {
     return (
       <div style={{ padding: 48 }}>
         <Result
+          data-testid="payment-return-result"
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
           status="success"
           title="Thanh toán thành công!"
@@ -71,6 +73,7 @@ export default function PaymentReturnPage() {
   return (
     <div style={{ padding: 48 }}>
       <Result
+        data-testid="payment-return-result"
         status="warning"
         title="Thanh toán chưa hoàn tất"
         subTitle="Vui lòng kiểm tra trạng thái đơn hàng hoặc thử lại"

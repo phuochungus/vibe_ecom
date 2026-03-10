@@ -63,65 +63,88 @@ export default function Header() {
         top: 0,
         zIndex: 1000,
         width: '100%',
-        background: '#fff',
-        boxShadow: '0 1px 4px rgba(0,0,0,.08)',
-        padding: '0 24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 24,
+        height: 72,
+        background: 'rgba(255,255,255,0.96)',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 1px 0 rgba(15, 23, 42, 0.08)',
+        padding: 0,
       }}
     >
-      {/* Logo */}
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-        <div style={{ fontSize: 24, fontWeight: 700, color: '#EE4D2D' }}>
-          Golf Store
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 1440,
+          margin: '0 auto',
+          padding: '0 24px',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 24,
+        }}
+      >
+        <Link
+          to="/"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#EE4D2D' }}>Golf Store</div>
+        </Link>
+
+        <div style={{ flex: 1, minWidth: 220, maxWidth: 760 }}>
+          <Search
+            placeholder="Tìm kiếm sản phẩm..."
+            allowClear
+            enterButton
+            size="large"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onSearch={handleSearch}
+          />
         </div>
-      </Link>
 
-      {/* Search */}
-      <Search
-        placeholder="Tìm kiếm sản phẩm..."
-        allowClear
-        enterButton
-        size="large"
-        style={{ flex: 1, maxWidth: 600 }}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        onSearch={handleSearch}
-      />
+        <div
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 20,
+            flexShrink: 0,
+          }}
+        >
+          <Badge count={itemCount} showZero={false} offset={[-2, 4]}>
+            <Link to="/cart" data-testid="header-cart-link">
+              <ShoppingCartOutlined style={{ fontSize: 24, color: '#333' }} />
+            </Link>
+          </Badge>
 
-      {/* Actions */}
-      <Space size="large">
-        {/* Cart */}
-        <Badge count={itemCount} showZero={false} offset={[-2, 4]}>
-          <Link to="/cart">
-            <ShoppingCartOutlined style={{ fontSize: 24, color: '#333' }} />
-          </Link>
-        </Badge>
+          {isAuthenticated ? (
+            <>
+              <Badge dot offset={[-2, 4]}>
+                <Link to="/notifications" data-testid="header-notifications-link">
+                  <BellOutlined style={{ fontSize: 24, color: '#333' }} />
+                </Link>
+              </Badge>
 
-        {isAuthenticated ? (
-          <>
-            {/* Notifications */}
-            <Badge dot offset={[-2, 4]}>
-              <Link to="/notifications">
-                <BellOutlined style={{ fontSize: 24, color: '#333' }} />
-              </Link>
-            </Badge>
-
-            {/* User Menu */}
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Space style={{ cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} />
-                <span>{user?.full_name}</span>
-              </Space>
-            </Dropdown>
-          </>
-        ) : (
-          <Button type="primary" onClick={() => navigate('/login')}>
-            Đăng nhập
-          </Button>
-        )}
-      </Space>
+              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+                <Space style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <Avatar icon={<UserOutlined />} />
+                  <span>{user?.full_name}</span>
+                </Space>
+              </Dropdown>
+            </>
+          ) : (
+            <Button type="primary" onClick={() => navigate('/login')} data-testid="header-login-button">
+              Đăng nhập
+            </Button>
+          )}
+        </div>
+      </div>
     </AntHeader>
   )
 }

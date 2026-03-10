@@ -46,8 +46,8 @@ export default function NotificationListPage() {
   return (
     <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={2} style={{ marginBottom: 0 }}>Thông báo</Title>
-        <Button onClick={() => markAllAsReadMutation.mutate()} disabled={unreadCount === 0} loading={markAllAsReadMutation.isPending}>
+        <Title level={2} style={{ marginBottom: 0 }} data-testid="notifications-title">Thông báo</Title>
+        <Button data-testid="notifications-mark-all" onClick={() => markAllAsReadMutation.mutate()} disabled={unreadCount === 0} loading={markAllAsReadMutation.isPending}>
           Đánh dấu tất cả đã đọc
         </Button>
       </div>
@@ -60,6 +60,7 @@ export default function NotificationListPage() {
           renderItem={(notification) => (
             <Card
               key={notification.id}
+              data-testid={`notification-item-${notification.id}`}
               style={{
                 marginBottom: 12,
                 background: notification.read ? '#fff' : '#f0f9ff',

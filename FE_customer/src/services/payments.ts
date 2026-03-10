@@ -3,6 +3,7 @@ import { api } from '@/lib/api'
 export interface PaymentInitiateResponse {
   checkout_url: string
   payment_id: string
+  status?: string
 }
 
 export const paymentsApi = {

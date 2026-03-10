@@ -59,6 +59,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             type="text"
             icon={<EyeOutlined />}
             onClick={handleViewDetail}
+            data-testid={`product-view-${product.id}`}
           >
             Xem chi tiết
           </Button>,
@@ -68,6 +69,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             icon={<ShoppingCartOutlined />}
             onClick={handleAddToCart}
             disabled={isUnavailable}
+            data-testid={`product-add-${product.id}`}
           >
             Thêm vào giỏ
           </Button>,

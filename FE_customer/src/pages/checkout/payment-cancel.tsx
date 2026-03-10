@@ -11,6 +11,7 @@ export default function PaymentCancelPage() {
   return (
     <div style={{ padding: 48 }}>
       <Result
+        data-testid="payment-cancel-result"
         icon={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
         status="error"
         title="Thanh toán bị hủy"

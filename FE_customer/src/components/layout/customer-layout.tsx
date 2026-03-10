@@ -7,9 +7,9 @@ const { Content } = Layout
 
 export default function CustomerLayout() {
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f4f6f8' }}>
       <Header />
-      <Content style={{ marginTop: 64 }}>
+      <Content style={{ marginTop: 72, background: '#f4f6f8' }}>
         <Outlet />
       </Content>
       <Footer />

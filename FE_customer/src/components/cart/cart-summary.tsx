@@ -46,6 +46,7 @@ export default function CartSummary() {
         block
         onClick={handleCheckout}
         disabled={itemCount === 0}
+        data-testid="cart-checkout-button"
       >
         Tiến hành thanh toán ({itemCount} sản phẩm)
       </Button>

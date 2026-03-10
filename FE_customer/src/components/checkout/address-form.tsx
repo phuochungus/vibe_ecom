@@ -26,7 +26,7 @@ export default function AddressForm({ form }: AddressFormProps) {
             label="Họ và tên người nhận"
             rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
           >
-            <Input placeholder="Nguyễn Văn A" />
+            <Input placeholder="Nguyễn Văn A" data-testid="address-recipient-name" />
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
@@ -38,7 +38,7 @@ export default function AddressForm({ form }: AddressFormProps) {
               { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' },
             ]}
           >
-            <Input placeholder="0901234567" />
+            <Input placeholder="0901234567" data-testid="address-phone" />
           </Form.Item>
         </Col>
       </Row>
@@ -48,22 +48,22 @@ export default function AddressForm({ form }: AddressFormProps) {
         label="Địa chỉ"
         rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
       >
-        <Input placeholder="Số nhà, tên đường" />
+        <Input placeholder="Số nhà, tên đường" data-testid="address-line1" />
       </Form.Item>
 
       <Form.Item name="address_line2" label="Địa chỉ chi tiết (tùy chọn)">
-        <Input placeholder="Tòa nhà, số phòng..." />
+        <Input placeholder="Tòa nhà, số phòng..." data-testid="address-line2" />
       </Form.Item>
 
       <Row gutter={16}>
         <Col xs={24} md={8}>
           <Form.Item name="ward" label="Phường/Xã">
-            <Input placeholder="Phường 1" />
+            <Input placeholder="Phường 1" data-testid="address-ward" />
           </Form.Item>
         </Col>
         <Col xs={24} md={8}>
           <Form.Item name="district" label="Quận/Huyện">
-            <Input placeholder="Quận 1" />
+            <Input placeholder="Quận 1" data-testid="address-district" />
           </Form.Item>
         </Col>
         <Col xs={24} md={8}>
@@ -72,17 +72,17 @@ export default function AddressForm({ form }: AddressFormProps) {
             label="Thành phố"
             rules={[{ required: true, message: 'Vui lòng nhập thành phố' }]}
           >
-            <Input placeholder="TP. Hồ Chí Minh" />
+            <Input placeholder="TP. Hồ Chí Minh" data-testid="address-city" />
           </Form.Item>
         </Col>
       </Row>
 
       <Form.Item name="province" label="Tỉnh/Thành phố">
-        <Input placeholder="TP. Hồ Chí Minh" />
+        <Input placeholder="TP. Hồ Chí Minh" data-testid="address-province" />
       </Form.Item>
 
       <Form.Item name="note" label="Ghi chú đơn hàng (tùy chọn)">
-        <Input.TextArea rows={3} placeholder="Ghi chú về đơn hàng, ví dụ: giao hàng giờ hành chính" />
+        <Input.TextArea rows={3} placeholder="Ghi chú về đơn hàng, ví dụ: giao hàng giờ hành chính" data-testid="address-note" />
       </Form.Item>
     </Form>
   )

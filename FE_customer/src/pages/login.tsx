@@ -45,12 +45,13 @@ export default function LoginPage() {
                     </div>
                 }
             >
-                <Form name="login" onFinish={handleSubmit} layout="vertical" size="large">
+                <Form name="login" onFinish={handleSubmit} layout="vertical" size="large" data-testid="customer-login-form">
                     <Form.Item
                         name="identifier"
                         rules={[{ required: true, message: "Vui lòng nhập email hoặc số điện thoại" }]}
                     >
                         <Input
+                            data-testid="customer-login-identifier"
                             prefix={<UserOutlined />}
                             placeholder="Email hoặc số điện thoại"
                             autoComplete="username"
@@ -59,6 +60,7 @@ export default function LoginPage() {
 
                     <Form.Item name="password" rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}>
                         <Input.Password
+                            data-testid="customer-login-password"
                             prefix={<LockOutlined />}
                             placeholder="Mật khẩu"
                             autoComplete="current-password"
@@ -66,7 +68,7 @@ export default function LoginPage() {
                     </Form.Item>
 
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" loading={loading} block>
+                        <Button type="primary" htmlType="submit" loading={loading} block data-testid="customer-login-submit">
                             Đăng nhập
                         </Button>
                     </Form.Item>
