@@ -13,7 +13,6 @@ import (
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
-const seedImageBaseURL = "http://127.0.0.1:8080/assets/seed-images"
 const seedUserPassword = "123456"
 
 func InitSchema(gdb *gorm.DB) error {
@@ -37,7 +36,7 @@ func InitSchema(gdb *gorm.DB) error {
 	)
 }
 
-func SeedDemoData(gdb *gorm.DB) error {
+func SeedDemoData(gdb *gorm.DB, publicBaseURL string) error {
 	if gdb == nil {
 		return fmt.Errorf("gorm db is required")
 	}
@@ -77,7 +76,7 @@ func SeedDemoData(gdb *gorm.DB) error {
 				Price:       129900,
 				Stock:       25,
 				Status:      "ACTIVE",
-				ImageURL:    seedImageURL("driver-pro-x.svg"),
+				ImageURL:    seedImageURL(publicBaseURL, "driver-pro-x.svg"),
 				CreatedAt:   now,
 				UpdatedAt:   now,
 			},
@@ -89,7 +88,7 @@ func SeedDemoData(gdb *gorm.DB) error {
 				Price:       219900,
 				Stock:       12,
 				Status:      "ACTIVE",
-				ImageURL:    seedImageURL("iron-tour-6pcs.svg"),
+				ImageURL:    seedImageURL(publicBaseURL, "iron-tour-6pcs.svg"),
 				CreatedAt:   now,
 				UpdatedAt:   now,
 			},
@@ -101,7 +100,7 @@ func SeedDemoData(gdb *gorm.DB) error {
 				Price:       89900,
 				Stock:       30,
 				Status:      "ACTIVE",
-				ImageURL:    seedImageURL("putter-classic-blade.svg"),
+				ImageURL:    seedImageURL(publicBaseURL, "putter-classic-blade.svg"),
 				CreatedAt:   now,
 				UpdatedAt:   now,
 			},
@@ -172,8 +171,12 @@ func looksLikeBcrypt(hash string) bool {
 	return strings.HasPrefix(strings.TrimSpace(hash), "$2")
 }
 
-func seedImageURL(filename string) string {
-	return seedImageBaseURL + "/" + strings.TrimSpace(filename)
+func seedImageURL(publicBaseURL string, filename string) string {
+	baseURL := strings.TrimRight(strings.TrimSpace(publicBaseURL), "/")
+	if baseURL == "" {
+		baseURL = "http://127.0.0.1:8080"
+	}
+	return baseURL + "/assets/seed-images/" + strings.TrimSpace(filename)
 }
 
 func ensureSeedProduct(tx *gorm.DB, input entities.Product) error {

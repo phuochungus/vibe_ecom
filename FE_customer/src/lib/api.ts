@@ -1,7 +1,12 @@
 import axios, { type AxiosError } from 'axios'
 
+const apiHost = import.meta.env.VITE_API_HOST?.trim().replace(/^https?:\/\//, '').replace(/\/$/, '')
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL?.trim() || (apiHost ? `https://${apiHost}/api/v1` : '/api/v1')
+
+const buildApiUrl = (path: string) => `${apiBaseURL.replace(/\/$/, '')}${path}`
+
 export const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: apiBaseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,7 +33,7 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           // Refresh token also returns envelope: { success, data: { access_token, ... } }
-          const { data } = await axios.post('/api/v1/auth/refresh', {
+          const { data } = await axios.post(buildApiUrl('/auth/refresh'), {
             refresh_token: refreshToken,
           })
           const newToken = data.data?.access_token ?? data.access_token

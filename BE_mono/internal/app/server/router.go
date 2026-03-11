@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -58,9 +59,10 @@ type RouteModules struct {
 	AuthResolver  middleware.TokenResolver
 }
 
-func NewRouter(health *HealthHandler, modules RouteModules) *gin.Engine {
+func NewRouter(health *HealthHandler, modules RouteModules, allowedOrigins []string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), observability.CorrelationID(), middleware.RequestID())
+	r.Use(corsMiddleware(allowedOrigins))
 
 	r.Static("/assets", "public")
 	registerDocsRoutes(r)
@@ -94,6 +96,39 @@ func NewRouter(health *HealthHandler, modules RouteModules) *gin.Engine {
 	}
 
 	return r
+}
+
+func corsMiddleware(allowedOrigins []string) gin.HandlerFunc {
+	normalized := make([]string, 0, len(allowedOrigins))
+	for _, origin := range allowedOrigins {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" {
+			normalized = append(normalized, trimmed)
+		}
+	}
+
+	allowAnyOrigin := slices.Contains(normalized, "*")
+
+	return func(c *gin.Context) {
+		origin := strings.TrimSpace(c.GetHeader("Origin"))
+		if origin != "" {
+			if allowAnyOrigin {
+				c.Header("Access-Control-Allow-Origin", "*")
+			} else if slices.Contains(normalized, origin) {
+				c.Header("Access-Control-Allow-Origin", origin)
+				c.Header("Vary", "Origin")
+			}
+			c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With, X-Request-Id")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		}
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
+	}
 }
 
 func registerDocsRoutes(r *gin.Engine) {

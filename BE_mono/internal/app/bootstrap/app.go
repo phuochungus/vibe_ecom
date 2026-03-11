@@ -47,7 +47,7 @@ func New(cfg config.Config) (*App, error) {
 		closeGorm(database)
 		return nil, fmt.Errorf("init schema: %w", err)
 	}
-	if err := db.SeedDemoData(database); err != nil {
+	if err := db.SeedDemoData(database, cfg.PublicBaseURL); err != nil {
 		closeGorm(database)
 		return nil, fmt.Errorf("seed demo data: %w", err)
 	}
@@ -79,7 +79,7 @@ func New(cfg config.Config) (*App, error) {
 		Notifications: notificationhttp.New(notificationService),
 		Reporting:     reportinghttp.New(reportingService),
 		AuthResolver:  authService,
-	})
+	}, cfg.CORSAllowedOrigins)
 
 	return &App{
 		cfg:    cfg,

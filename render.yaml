@@ -17,9 +17,12 @@ services:
           name: phuochungus-golf-store-db
           property: connectionString
       - key: PUBLIC_BASE_URL
-        value: https://phuochungus-golf-store-api.onrender.com
+        fromService:
+          name: phuochungus-golf-store-api
+          type: web
+          property: host
       - key: CORS_ALLOWED_ORIGINS
-        value: https://phuochungus-golf-store-admin.onrender.com,https://phuochungus-golf-store-customer.onrender.com
+        value: "*"
       - key: JWT_ISSUER
         value: be-mono
       - key: JWT_SECRET
@@ -42,8 +45,11 @@ services:
     buildCommand: cd FE_admin && npm ci && npm run build
     staticPublishPath: FE_admin/dist
     envVars:
-      - key: VITE_API_BASE_URL
-        value: https://phuochungus-golf-store-api.onrender.com/api/v1
+      - key: VITE_API_HOST
+        fromService:
+          name: phuochungus-golf-store-api
+          type: web
+          property: host
     routes:
       - type: rewrite
         source: /*
@@ -61,8 +67,11 @@ services:
     buildCommand: cd FE_customer && npm ci && npm run build
     staticPublishPath: FE_customer/dist
     envVars:
-      - key: VITE_API_BASE_URL
-        value: https://phuochungus-golf-store-api.onrender.com/api/v1
+      - key: VITE_API_HOST
+        fromService:
+          name: phuochungus-golf-store-api
+          type: web
+          property: host
     routes:
       - type: rewrite
         source: /*
