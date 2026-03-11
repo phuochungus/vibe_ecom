@@ -22,7 +22,7 @@ services:
           type: web
           envVarKey: RENDER_EXTERNAL_HOSTNAME
       - key: CORS_ALLOWED_ORIGINS
-        value: "*"
+        value: https://phuochungus-golf-store-customer.onrender.com,https://phuochungus-golf-store-admin.onrender.com
       - key: JWT_ISSUER
         value: be-mono
       - key: JWT_SECRET
