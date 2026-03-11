@@ -38,7 +38,6 @@ services:
     name: phuochungus-golf-store-admin
     runtime: static
     plan: free
-    region: singapore
     branch: main
     autoDeploy: true
     buildCommand: cd FE_admin && npm ci && npm run build
@@ -59,7 +58,6 @@ services:
     name: phuochungus-golf-store-customer
     runtime: static
     plan: free
-    region: singapore
     branch: main
     autoDeploy: true
     buildCommand: cd FE_customer && npm ci && npm run build
