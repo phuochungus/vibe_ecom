@@ -15,7 +15,7 @@
 ## 3. Quyết định kiến trúc
 - Kiến trúc chính: `Modular Monolith`.
 - Một process HTTP duy nhất cho toàn bộ domain nghiệp vụ.
-- Một database logic chung (MySQL 8) cho MVP.
+- Một database logic chung (PostgreSQL 16) cho MVP.
 - Giao tiếp nội bộ giữa domain bằng function call + transaction, không tách service mạng nội bộ.
 - Bất đồng bộ (nếu cần) chạy qua outbox/job trong cùng codebase monolith.
 

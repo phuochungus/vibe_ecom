@@ -7,8 +7,8 @@ type Order struct {
 	OrderCode             string                  `gorm:"column:order_code;type:varchar(32);uniqueIndex;not null" json:"order_code"`
 	IdempotencyKey        string                  `gorm:"column:idempotency_key;type:varchar(128);not null;index:uk_orders_user_idempotency,unique" json:"idempotency_key"`
 	UserID                string                  `gorm:"column:user_id;type:varchar(36);not null;index:uk_orders_user_idempotency,unique" json:"user_id"`
-	OrderStatus           string                  `gorm:"column:order_status;type:enum('NEW','PENDING_PAYMENT','PAID','PROCESSING','SHIPPING','COMPLETED','CANCELLED');not null" json:"order_status"`
-	PaymentStatus         string                  `gorm:"column:payment_status;type:enum('UNPAID','PAID','FAILED','REFUNDED');not null" json:"payment_status"`
+	OrderStatus           string                  `gorm:"column:order_status;type:varchar(32);not null" json:"order_status"`
+	PaymentStatus         string                  `gorm:"column:payment_status;type:varchar(16);not null" json:"payment_status"`
 	CurrencyCode          string                  `gorm:"column:currency_code;type:char(3);not null" json:"currency_code"`
 	SubtotalAmount        int64                   `gorm:"column:subtotal_amount;not null" json:"subtotal_amount"`
 	DiscountAmount        int64                   `gorm:"column:discount_amount;not null" json:"discount_amount"`

@@ -126,7 +126,7 @@ test.beforeEach(async ({ page }) => {
     })
   })
 
-  await page.route('**/api/v1/admin/products', async (route) => {
+  await page.route('**/api/v1/admin/products**', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -203,7 +203,7 @@ test.beforeEach(async ({ page }) => {
 
 async function login(page: Parameters<typeof test>[0]['page']) {
   await page.goto('/login')
-  await page.getByTestId('login-identifier').fill('admin@golf.local')
+  await page.getByTestId('login-email').fill('admin@golf.local')
   await page.getByTestId('login-password').fill('admin123')
   await page.getByTestId('login-submit').click()
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
@@ -220,6 +220,7 @@ test('admin can log in and see dashboard data', async ({ page }) => {
 test('admin can create a product', async ({ page }) => {
   await login(page)
   await page.getByRole('link', { name: 'Sản phẩm' }).click()
+  await expect(page.getByRole('heading', { name: 'Sản phẩm' })).toBeVisible()
   await page.getByRole('link', { name: 'Thêm sản phẩm' }).click()
   await page.getByLabel(/SKU/).fill('CLUB-002')
   await page.getByLabel(/Tên sản phẩm/).fill('Putter Elite')

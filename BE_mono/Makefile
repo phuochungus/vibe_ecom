@@ -1,4 +1,4 @@
-.PHONY: test run mysql-up mysql-down
+.PHONY: test run postgres-up postgres-down
 
 test:
 	go test ./...
@@ -6,8 +6,8 @@ test:
 run:
 	go run ./cmd/api
 
-mysql-up:
-	docker compose -f docker-compose.mysql.yml up -d
+postgres-up:
+	docker compose -f docker-compose.postgres.yml up -d
 
-mysql-down:
-	docker compose -f docker-compose.mysql.yml down -v
+postgres-down:
+	docker compose -f docker-compose.postgres.yml down -v

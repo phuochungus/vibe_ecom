@@ -8,8 +8,8 @@ type User struct {
 	Phone               string         `gorm:"column:phone;type:varchar(20);uniqueIndex;not null" json:"phone"`
 	Password            string         `gorm:"column:password;type:varchar(255);not null" json:"-"`
 	FullName            string         `gorm:"column:full_name;type:varchar(150);not null" json:"full_name"`
-	Role                string         `gorm:"column:role;type:enum('USER','ADMIN');not null;default:USER" json:"role"`
-	Status              string         `gorm:"column:status;type:enum('ACTIVE','LOCKED','DISABLED');not null;default:ACTIVE" json:"status"`
+	Role                string         `gorm:"column:role;type:varchar(16);not null;default:USER" json:"role"`
+	Status              string         `gorm:"column:status;type:varchar(16);not null;default:ACTIVE" json:"status"`
 	FailedLoginAttempts int            `gorm:"column:failed_login_attempts;not null;default:0" json:"failed_login_attempts"`
 	LockedUntil         *time.Time     `gorm:"column:locked_until" json:"locked_until,omitempty"`
 	LastLoginAt         *time.Time     `gorm:"column:last_login_at" json:"last_login_at,omitempty"`

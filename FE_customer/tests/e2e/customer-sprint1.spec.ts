@@ -131,7 +131,7 @@ test.beforeEach(async ({ page }) => {
     })
   })
 
-  await page.route('**/api/v1/orders', async (route) => {
+  await page.route('**/api/v1/orders**', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
         status: 201,
@@ -229,8 +229,8 @@ test.beforeEach(async ({ page }) => {
 
 async function login(page: Parameters<typeof test>[0]['page']) {
   await page.goto('/login')
-  await page.getByTestId('customer-login-identifier').fill('user@golf.local')
-  await page.getByTestId('customer-login-password').fill('user123')
+  await page.getByTestId('customer-login-email').fill('user@golf.local')
+  await page.getByTestId('customer-login-password').fill('123456')
   await page.getByTestId('customer-login-submit').click()
   await expect(page.getByTestId('header-cart-link')).toBeVisible()
 }

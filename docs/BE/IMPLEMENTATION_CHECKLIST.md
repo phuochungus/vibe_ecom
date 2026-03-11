@@ -1,10 +1,10 @@
 # Implementation Checklist - DB Design to Build
 
 ## 1. Chuẩn bị
-- [ ] Xác nhận MySQL version >= 8.0.
-- [ ] Thiết lập charset/collation: `utf8mb4` / `utf8mb4_0900_ai_ci`.
+- [ ] Xác nhận PostgreSQL version >= 16.
+- [ ] Thiết lập encoding/timezone: `UTF8` / `UTC`.
 - [ ] Chuẩn hóa UTC cho toàn bộ service kết nối DB.
-- [ ] Thống nhất helper UUID `UUID_TO_BIN` / `BIN_TO_UUID`.
+- [ ] Thống nhất chiến lược UUID string giữa app và database.
 
 ## 2. Tạo schema (khi vào pha implement)
 - [ ] Tạo bảng theo thứ tự phụ thuộc FK: `users` -> `products` -> `orders` -> `order_items` -> bảng log/transaction.

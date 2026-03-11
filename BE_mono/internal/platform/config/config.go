@@ -9,7 +9,7 @@ type Config struct {
 	ServiceName          string
 	HTTPPort             string
 	Env                  string
-	MySQLDSN             string
+	PostgresDSN          string
 	JWTIssuer            string
 	JWTSecret            string
 	JWTAccessTTLMinutes  int
@@ -21,7 +21,7 @@ func Load(defaultServiceName string, defaultPort string) Config {
 		ServiceName:          getEnv("SERVICE_NAME", defaultServiceName),
 		HTTPPort:             getEnv("HTTP_PORT", defaultPort),
 		Env:                  getEnv("APP_ENV", "local"),
-		MySQLDSN:             getEnv("MYSQL_DSN", ""),
+		PostgresDSN:          getEnv("POSTGRES_DSN", ""),
 		JWTIssuer:            getEnv("JWT_ISSUER", defaultServiceName),
 		JWTSecret:            getEnv("JWT_SECRET", "dev_jwt_secret_change_me"),
 		JWTAccessTTLMinutes:  getEnvInt("JWT_ACCESS_TTL_MINUTES", 15),

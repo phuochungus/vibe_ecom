@@ -1,6 +1,7 @@
 package http
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -99,6 +100,12 @@ func (h *Handler) ListOrders(c *gin.Context) {
 	to, _ := parseOptionalTime(c.Query("to"))
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
+
+	// log
+	log.Print(from)
+	log.Print(to)
+	log.Print(page)
+	log.Print(pageSize)
 
 	out := h.orders.List(dto.ListInput{
 		UserID:   user.ID,

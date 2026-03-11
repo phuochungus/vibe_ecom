@@ -39,7 +39,7 @@ type App struct {
 }
 
 func New(cfg config.Config) (*App, error) {
-	database, err := db.OpenMySQL(cfg.MySQLDSN)
+	database, err := db.OpenPostgres(cfg.PostgresDSN)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}

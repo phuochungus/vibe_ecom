@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/api";
 
 interface LoginForm {
-    identifier: string;
+    email: string;
     password: string;
 }
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
     const onSubmit = async (data: LoginForm) => {
         try {
             setLoading(true);
-            await login(data.identifier, data.password);
+            await login(data.email, data.password);
             navigate("/");
         } catch (err) {
             const msg = getErrorMessage(err);
@@ -70,16 +70,16 @@ export default function LoginPage() {
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="identifier">Email / Số điện thoại</Label>
+                            <Label htmlFor="email">Email</Label>
                             <Input
-                                id="identifier"
+                                id="email"
                                 placeholder="admin@example.com"
                                 autoComplete="username"
-                                data-testid="login-identifier"
-                                {...register("identifier", { required: "Vui lòng nhập email hoặc số điện thoại" })}
+                                data-testid="login-email"
+                                {...register("email", { required: "Vui lòng nhập email" })}
                             />
-                            {errors.identifier && (
-                                <p className="text-xs text-destructive">{errors.identifier.message}</p>
+                            {errors.email && (
+                                <p className="text-xs text-destructive">{errors.email.message}</p>
                             )}
                         </div>
 

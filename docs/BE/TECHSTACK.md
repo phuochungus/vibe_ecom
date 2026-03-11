@@ -108,7 +108,7 @@ Tài liệu này định nghĩa tech stack backend cho dự án golf store theo 
 
 ### 8.2 Integration test (service-level)
 - Tool: `testcontainers-go`.
-- Dependency test: `MySQL`, `Redis`, `Kafka`, `RabbitMQ`.
+- Dependency test: `PostgreSQL`, `Redis`, `Kafka`, `RabbitMQ`.
 - Verify:
 1. DB transaction + outbox.
 2. Publish/consume Kafka đúng schema.

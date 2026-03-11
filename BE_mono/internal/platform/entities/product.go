@@ -15,9 +15,9 @@ type Product struct {
 	Description string         `gorm:"column:description;type:text" json:"description"`
 	Price       int64          `gorm:"column:price;not null" json:"price"`
 	Stock       int            `gorm:"column:stock;not null" json:"stock"`
-	Status      string         `gorm:"column:status;type:enum('ACTIVE','INACTIVE','DISCONTINUED');not null;default:ACTIVE" json:"status"`
+	Status      string         `gorm:"column:status;type:varchar(16);not null;default:ACTIVE" json:"status"`
 	ImageURL    string         `gorm:"column:image_url;type:varchar(500)" json:"image_url"`
-	ImageURLs   datatypes.JSON `gorm:"column:image_urls;type:json" json:"image_urls"`
+	ImageURLs   datatypes.JSON `gorm:"column:image_urls;type:jsonb" json:"image_urls"`
 	DeletedAt   *time.Time     `gorm:"column:deleted_at"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null" json:"created_at"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null" json:"updated_at"`

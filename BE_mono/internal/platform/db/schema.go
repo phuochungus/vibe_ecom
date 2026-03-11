@@ -14,6 +14,7 @@ import (
 )
 
 const seedImageBaseURL = "http://127.0.0.1:8080/assets/seed-images"
+const seedUserPassword = "123456"
 
 func InitSchema(gdb *gorm.DB) error {
 	if gdb == nil {
@@ -46,7 +47,7 @@ func SeedDemoData(gdb *gorm.DB) error {
 		if err := ensureSeedUser(tx, seedUserInput{
 			Email:    "admin@golf.local",
 			Phone:    "0900000001",
-			Password: "admin123",
+			Password: seedUserPassword,
 			FullName: "System Admin",
 			Role:     "ADMIN",
 			Status:   "ACTIVE",
@@ -58,7 +59,7 @@ func SeedDemoData(gdb *gorm.DB) error {
 		if err := ensureSeedUser(tx, seedUserInput{
 			Email:    "user@golf.local",
 			Phone:    "0900000002",
-			Password: "user123",
+			Password: seedUserPassword,
 			FullName: "Demo User",
 			Role:     "USER",
 			Status:   "ACTIVE",

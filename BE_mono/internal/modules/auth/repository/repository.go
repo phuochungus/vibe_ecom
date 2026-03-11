@@ -9,7 +9,7 @@ import (
 )
 
 type Repository interface {
-	FindUserByIdentifier(identifier string) (*entities.User, error)
+	FindUserByEmail(email string) (*entities.User, error)
 	UpdateUserFailedLogins(userID string, attempts int, lockedUntil *time.Time, now time.Time) error
 	UpdateUserLoginSuccessTx(userID string, now time.Time, newToken *entities.AuthToken) error
 	FindUserByRefreshToken(refreshToken string, userID string, now time.Time) (*entities.User, error)
@@ -28,10 +28,10 @@ func NewGorm(db *gorm.DB) *GormRepository {
 	return &GormRepository{db: db}
 }
 
-func (r *GormRepository) FindUserByIdentifier(identifier string) (*entities.User, error) {
+func (r *GormRepository) FindUserByEmail(email string) (*entities.User, error) {
 	user := &entities.User{}
 	err := r.db.
-		Where("LOWER(email) = LOWER(?) OR LOWER(phone) = LOWER(?)", identifier, identifier).
+		Where("LOWER(email) = LOWER(?)", email).
 		Take(user).Error
 	return user, err
 }

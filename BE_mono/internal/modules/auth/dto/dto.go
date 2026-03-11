@@ -3,8 +3,8 @@ package dto
 import entities "golf-store/be-mono/internal/platform/entities"
 
 type LoginRequest struct {
-	Identifier string `json:"identifier"`
-	Password   string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type RefreshTokenRequest struct {

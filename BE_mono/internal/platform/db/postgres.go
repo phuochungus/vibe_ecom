@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func OpenMySQL(dsn string) (*gorm.DB, error) {
+func OpenPostgres(dsn string) (*gorm.DB, error) {
 	if dsn == "" {
-		return nil, fmt.Errorf("MYSQL_DSN is required")
+		return nil, fmt.Errorf("POSTGRES_DSN is required")
 	}
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("open mysql: %w", err)
+		return nil, fmt.Errorf("open postgres: %w", err)
 	}
 
 	sqlDB, err := db.DB()
@@ -30,7 +30,7 @@ func OpenMySQL(dsn string) (*gorm.DB, error) {
 
 	if err := sqlDB.Ping(); err != nil {
 		_ = sqlDB.Close()
-		return nil, fmt.Errorf("ping mysql: %w", err)
+		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
 
 	return db, nil

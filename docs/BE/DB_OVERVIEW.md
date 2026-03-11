@@ -1,4 +1,4 @@
-# DB Overview - Golf Store (MySQL 8)
+# DB Overview - Golf Store (PostgreSQL 16)
 
 ## 1. Mục tiêu
 Tài liệu này định nghĩa chuẩn thiết kế CSDL backend cho hệ thống golf store, bám theo `docs/BRD.md` phiên bản `1.2`.
@@ -11,18 +11,13 @@ Tài liệu này định nghĩa chuẩn thiết kế CSDL backend cho hệ thố
 - Lưu audit log cho thực thể trọng yếu.
 
 ## 3. Chuẩn kỹ thuật bắt buộc
-- DB engine: `MySQL 8`.
-- Storage engine: `InnoDB`.
-- Charset: `utf8mb4`.
-- Collation khuyến nghị: `utf8mb4_0900_ai_ci`.
+- DB engine: `PostgreSQL 16`.
+- Encoding: `UTF8`.
 - Múi giờ lưu trữ: `UTC`.
 - Tiền tệ mặc định: `VND` (`currency_code = 'VND'`).
 
 ## 4. Quy ước ID và thời gian
-- Tất cả khóa chính: `id BINARY(16)` (UUID).
-- Ở tầng ứng dụng sử dụng:
-1. `UUID_TO_BIN(:uuid, 1)` khi ghi.
-2. `BIN_TO_UUID(id, 1)` khi đọc.
+- Tất cả khóa chính: `id VARCHAR(36)` lưu UUID string.
 - Cột thời gian chuẩn cho hầu hết bảng:
 1. `created_at DATETIME(3) NOT NULL`
 2. `updated_at DATETIME(3) NOT NULL`

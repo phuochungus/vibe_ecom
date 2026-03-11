@@ -52,7 +52,7 @@
 - Auth: Public
 - Request:
 ```json
-{ "identifier": "user@email.com", "password": "***" }
+{ "email": "user@email.com", "password": "***" }
 ```
 - Response `200`:
 ```json

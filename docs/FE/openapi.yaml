@@ -762,9 +762,9 @@ components:
 
     LoginRequest:
       type: object
-      required: [identifier, password]
+      required: [email, password]
       properties:
-        identifier:
+        email:
           type: string
         password:
           type: string

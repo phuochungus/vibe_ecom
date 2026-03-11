@@ -38,7 +38,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	result, apiErr := h.authsvc.Login(req.Identifier, req.Password)
+	result, apiErr := h.authsvc.Login(req.Email, req.Password)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return

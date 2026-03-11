@@ -83,10 +83,10 @@ type LoginResult struct {
 	User         *entities.User
 }
 
-func (s *Service) Login(identifier string, password string) (*LoginResult, *apperrors.APIError) {
+func (s *Service) Login(email string, password string) (*LoginResult, *apperrors.APIError) {
 	now := time.Now().UTC()
 
-	userEntity, err := s.repo.FindUserByIdentifier(identifier)
+	userEntity, err := s.repo.FindUserByEmail(email)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, &apperrors.APIError{Status: http.StatusUnauthorized, Code: "INVALID_CREDENTIALS", Message: "Invalid credentials"}
 	}
@@ -249,9 +249,9 @@ func (s *Service) verifyPassword(user *entities.User, plain string) bool {
 	return false
 }
 
-func (s *Service) findUserByIdentifier(identifier string) (*entities.User, error) {
-	lookup := strings.TrimSpace(identifier)
-	return s.repo.FindUserByIdentifier(lookup)
+func (s *Service) findUserByEmail(email string) (*entities.User, error) {
+	lookup := strings.TrimSpace(email)
+	return s.repo.FindUserByEmail(lookup)
 }
 
 func (s *Service) findUserByRefreshToken(refreshToken string, userID string, now time.Time) (*entities.User, error) {

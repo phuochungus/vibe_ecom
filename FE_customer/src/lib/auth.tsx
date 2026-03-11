@@ -5,7 +5,7 @@ import type { User, LoginResponse } from "@/types";
 interface AuthContextValue {
     user: User | null;
     isAuthenticated: boolean;
-    login: (identifier: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -23,10 +23,10 @@ function getUserFromStorage(): User | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(getUserFromStorage);
 
-    const login = useCallback(async (identifier: string, password: string) => {
+    const login = useCallback(async (email: string, password: string) => {
         // Backend always returns envelope: { success, data: LoginResponse, meta, ... }
         const res = await api.post<{ success: boolean; data: LoginResponse }>("/auth/login", {
-            identifier: identifier.trim(),
+            email: email.trim(),
             password: password.trim(),
         });
         const payload = res.data.data;

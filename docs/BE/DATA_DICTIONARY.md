@@ -1,8 +1,8 @@
-# Data Dictionary - Golf Store (MySQL 8)
+# Data Dictionary - Golf Store (PostgreSQL 16)
 
 ## 1. Quy ước chung
-- PK chuẩn: `id BINARY(16)` (UUID).
-- Timestamps: `DATETIME(3)` theo UTC.
+- PK chuẩn: `id VARCHAR(36)` (UUID string).
+- Timestamps: `TIMESTAMPTZ` theo UTC.
 - Số tiền: `DECIMAL(18,2)`.
 - Soft delete dùng `deleted_at` cho bảng danh mục.
 - Tất cả FK dùng `ON UPDATE RESTRICT`; `ON DELETE RESTRICT` cho dữ liệu giao dịch.

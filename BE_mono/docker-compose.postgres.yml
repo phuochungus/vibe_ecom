@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: golf-store-mono-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: golf_store_mono
+      POSTGRES_USER: golf
+      POSTGRES_PASSWORD: golf
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U golf -d golf_store_mono"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mono_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  mono_postgres_data:

@@ -14,10 +14,10 @@ export default function LoginPage() {
         return <Navigate to="/" replace />;
     }
 
-    const handleSubmit = async (values: { identifier: string; password: string }) => {
+    const handleSubmit = async (values: { email: string; password: string }) => {
         setLoading(true);
         try {
-            await login(values.identifier, values.password);
+            await login(values.email, values.password);
             message.success("Đăng nhập thành công");
             navigate("/");
         } catch (error) {
@@ -47,13 +47,13 @@ export default function LoginPage() {
             >
                 <Form name="login" onFinish={handleSubmit} layout="vertical" size="large" data-testid="customer-login-form">
                     <Form.Item
-                        name="identifier"
-                        rules={[{ required: true, message: "Vui lòng nhập email hoặc số điện thoại" }]}
+                        name="email"
+                        rules={[{ required: true, message: "Vui lòng nhập email" }]}
                     >
                         <Input
-                            data-testid="customer-login-identifier"
+                            data-testid="customer-login-email"
                             prefix={<UserOutlined />}
-                            placeholder="Email hoặc số điện thoại"
+                            placeholder="Email"
                             autoComplete="username"
                         />
                     </Form.Item>
