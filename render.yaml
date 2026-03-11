@@ -20,7 +20,7 @@ services:
         fromService:
           name: phuochungus-golf-store-api
           type: web
-          property: host
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
       - key: CORS_ALLOWED_ORIGINS
         value: "*"
       - key: JWT_ISSUER
@@ -49,7 +49,7 @@ services:
         fromService:
           name: phuochungus-golf-store-api
           type: web
-          property: host
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
     routes:
       - type: rewrite
         source: /*
@@ -71,7 +71,7 @@ services:
         fromService:
           name: phuochungus-golf-store-api
           type: web
-          property: host
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
     routes:
       - type: rewrite
         source: /*
