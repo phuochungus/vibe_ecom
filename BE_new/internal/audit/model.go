@@ -1,4 +1,4 @@
-package entity
+package audit
 
 import (
 	"time"

@@ -1,4 +1,4 @@
-package entity
+package order
 
 import "time"
 
@@ -11,16 +11,14 @@ type Order struct {
 	DiscountAmount int64       `gorm:"column:discount_amount" json:"discount_amount"`
 	ShippingFee    int64       `gorm:"column:shipping_fee" json:"shipping_fee"`
 	TotalAmount    int64       `gorm:"column:total_amount" json:"total_amount"`
-	PaymentDueAt   *time.Time  `gorm:"column:payment_due_at"`
-	CustomerNote   *string     `gorm:"column:customer_note"`
+	PaymentDueAt   *time.Time  `gorm:"column:payment_due_at" json:"payment_due_at,omitempty"`
+	CustomerNote   *string     `gorm:"column:customer_note" json:"customer_note,omitempty"`
 	CancelReason   *string     `gorm:"column:cancel_reason" json:"cancel_reason,omitempty"`
 	FullAddress    string      `gorm:"column:full_address" json:"full_address"`
 	PlacedAt       time.Time   `gorm:"column:placed_at" json:"placed_at"`
 	CreatedAt      time.Time   `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt      time.Time   `gorm:"column:updated_at" json:"updated_at"`
-	User           *User       `json:"user,omitempty"`
-	Items          []OrderItem `json:"items,omitempty"`
-	Products       []Product   `json:"products,omitempty"`
+	Items          []OrderItem `gorm:"foreignKey:OrderID" json:"items,omitempty"`
 }
 
 func (Order) TableName() string {

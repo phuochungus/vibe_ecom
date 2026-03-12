@@ -1,12 +1,10 @@
-package entity
+package product
 
 import (
 	"time"
 
 	"gorm.io/datatypes"
 )
-
-type Array[T any] []T
 
 type Product struct {
 	ID          string         `gorm:"column:id" json:"id"`
@@ -21,8 +19,6 @@ type Product struct {
 	DeletedAt   *time.Time     `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	CreatedAt   time.Time      `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at" json:"updated_at"`
-	OrderItems  []OrderItem    `json:"order_items,omitempty"`
-	Orders      []Order        `json:"orders,omitempty"`
 }
 
 func (Product) TableName() string {
