@@ -3,16 +3,16 @@ package entity
 import "time"
 
 type Notification struct {
-	ID        string     `gorm:"column:id;type:varchar(36);primaryKey"`
-	UserID    string     `gorm:"column:user_id;type:varchar(36);not null;index:uk_notification_dedupe,unique"`
-	Title     string     `gorm:"column:title;type:varchar(255);not null"`
-	Content   string     `gorm:"column:content;type:text;not null"`
-	Status    string     `gorm:"column:status;type:varchar(16);not null;default:SENT"`
-	IsRead    bool       `gorm:"column:is_read;not null;default:false"`
+	ID        string     `gorm:"column:id"`
+	UserID    string     `gorm:"column:user_id"`
+	Title     string     `gorm:"column:title"`
+	Content   string     `gorm:"column:content"`
+	Status    string     `gorm:"column:status"`
+	IsRead    bool       `gorm:"column:is_read"`
 	SentAt    *time.Time `gorm:"column:sent_at" json:"sent_at,omitempty"`
-	CreatedAt time.Time  `gorm:"column:created_at;not null" json:"created_at"`
-	UpdatedAt time.Time  `gorm:"column:updated_at;not null" json:"updated_at"`
-	User      *User      `gorm:"foreignKey:UserID;references:ID" json:"user,omitempty"`
+	CreatedAt time.Time  `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt time.Time  `gorm:"column:updated_at" json:"updated_at"`
+	User      *User      `json:"user,omitempty"`
 }
 
 func (Notification) TableName() string {
