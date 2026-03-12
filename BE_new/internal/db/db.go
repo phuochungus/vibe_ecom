@@ -6,8 +6,6 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	entity "BE_new/internal/entity"
 )
 
 var DB *gorm.DB
@@ -32,15 +30,6 @@ func InitializeDatabase() error {
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(25)
 	sqlDB.SetConnMaxLifetime(0)
-
-	DB.AutoMigrate(&entity.User{})
-	DB.AutoMigrate(&entity.UserAddress{})
-	DB.AutoMigrate(&entity.Order{})
-	DB.AutoMigrate(&entity.OrderItem{})
-	DB.AutoMigrate(&entity.Notification{})
-	DB.AutoMigrate(&entity.AuditLog{})
-	DB.AutoMigrate(&entity.Product{})
-	DB.AutoMigrate(&entity.Notification{})
 
 	return nil
 }

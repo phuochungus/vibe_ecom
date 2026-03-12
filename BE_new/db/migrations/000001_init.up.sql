@@ -115,7 +115,6 @@ CREATE TABLE
         entity_type VARCHAR(64) NOT NULL,
         entity_id VARCHAR(36) NOT NULL,
         action VARCHAR(64) NOT NULL,
-        action VARCHAR(32) NOT NULL,
         actor_id VARCHAR(36),
         before_data JSONB,
         after_data JSONB,
@@ -135,5 +134,3 @@ CREATE INDEX idx_user_addresses__user_default ON user_addresses (user_id, is_def
 CREATE INDEX idx_audit__entity_time ON audit_logs (entity_type, entity_id, created_at);
 
 CREATE INDEX idx_audit__action_time ON audit_logs (action, created_at);
-
-CREATE INDEX idx_audit__actor_time ON audit_logs (actor_type, actor_id, created_at);
