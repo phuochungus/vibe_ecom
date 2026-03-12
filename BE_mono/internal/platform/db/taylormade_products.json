@@ -1,0 +1,272 @@
+[
+  {
+    "sku": "TM-BAG-FLEXTECH-SUPERLITE",
+    "name": "FlexTech Superlite Golf Stand Bag",
+    "description": "Lightweight TaylorMade stand bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 21999,
+    "stock": 18,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-FLEXTECH-STAND",
+    "name": "FlexTech Golf Stand Bag",
+    "description": "TaylorMade stand bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 27999,
+    "stock": 16,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-FLEXTECH-CROSSOVER",
+    "name": "FlexTech Crossover Golf Stand Bag",
+    "description": "Hybrid TaylorMade stand bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 29999,
+    "stock": 14,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-CART-LITE",
+    "name": "Cart Lite Golf Cart Bag",
+    "description": "TaylorMade cart bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 27999,
+    "stock": 12,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-SIGNATURE-CART",
+    "name": "Signature Cart Golf Bag",
+    "description": "Premium TaylorMade cart bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 32999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-SIGNATURE-STAFF",
+    "name": "Signature Staff Bag",
+    "description": "Tour-style TaylorMade staff bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 64999,
+    "stock": 6,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-FLEXTECH-WATERPROOF",
+    "name": "FlexTech Waterproof Golf Stand Bag",
+    "description": "Waterproof TaylorMade stand bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 34999,
+    "stock": 8,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-FLEXTECH-CARRY-PREMIUM",
+    "name": "FlexTech Carry Premium Golf Stand Bag",
+    "description": "Premium carry-focused TaylorMade stand bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 32999,
+    "stock": 9,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-FLEXTECH-LE",
+    "name": "FlexTech Limited Edition Golf Stand Bag",
+    "description": "Limited-edition TaylorMade stand bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 29999,
+    "stock": 7,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-BAG-TEAM-TM-STAFF",
+    "name": "Team TaylorMade Staff Bag",
+    "description": "TaylorMade staff bag sourced from the official TaylorMade golf bags catalog.",
+    "price": 59999,
+    "stock": 6,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-5K-ZT-CB",
+    "name": "Spider 5K-ZT Counter Balance Putter",
+    "description": "TaylorMade zero-torque counterbalance putter sourced from the official TaylorMade putters catalog.",
+    "price": 44999,
+    "stock": 9,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-5K-ZT",
+    "name": "Spider 5K-ZT Putter",
+    "description": "TaylorMade zero-torque putter sourced from the official TaylorMade putters catalog.",
+    "price": 44999,
+    "stock": 9,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-BLK-CB-DB",
+    "name": "Spider Tour Black Counter Balance Double Bend",
+    "description": "TaylorMade Spider Tour Black counterbalance putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-BLK-CB-X",
+    "name": "Spider Tour Black Counter Balance X",
+    "description": "TaylorMade Spider Tour Black counterbalance X-neck putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-BLK-DB",
+    "name": "Spider Tour Black Double Bend",
+    "description": "TaylorMade Spider Tour Black double-bend putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-BLK-X",
+    "name": "Spider Tour Black X",
+    "description": "TaylorMade Spider Tour Black X-neck putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-X-LNECK",
+    "name": "Spider Tour X L-Neck",
+    "description": "TaylorMade Spider Tour X L-neck putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-X-3",
+    "name": "Spider Tour X #3",
+    "description": "TaylorMade Spider Tour X #3 putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-V-DB",
+    "name": "Spider Tour V Double Bend",
+    "description": "TaylorMade Spider Tour V double-bend putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-PUTTER-SPIDER-S-DB",
+    "name": "Spider Tour S Double Bend",
+    "description": "TaylorMade Spider Tour S double-bend putter sourced from the official TaylorMade putters catalog.",
+    "price": 34999,
+    "stock": 10,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-P790",
+    "name": "P790 Irons",
+    "description": "TaylorMade forged iron set sourced from the official TaylorMade irons catalog.",
+    "price": 139999,
+    "stock": 8,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-P7CB",
+    "name": "P7CB Irons",
+    "description": "TaylorMade cavity-back iron set sourced from the official TaylorMade irons catalog.",
+    "price": 149999,
+    "stock": 7,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-P770",
+    "name": "P770 Irons",
+    "description": "TaylorMade players-distance iron set sourced from the official TaylorMade irons catalog.",
+    "price": 129999,
+    "stock": 8,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-QI-GUNMETAL",
+    "name": "Qi Gunmetal Designer Series Irons",
+    "description": "TaylorMade Qi designer-series irons sourced from the official TaylorMade irons catalog.",
+    "price": 129999,
+    "stock": 6,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-QI-HL",
+    "name": "Qi HL Irons",
+    "description": "TaylorMade high-launch iron set sourced from the official TaylorMade irons catalog.",
+    "price": 99999,
+    "stock": 9,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-QI",
+    "name": "Qi Irons",
+    "description": "TaylorMade Qi iron set sourced from the official TaylorMade irons catalog.",
+    "price": 99999,
+    "stock": 9,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-P790-COPPER",
+    "name": "P790 Aged Copper Irons",
+    "description": "TaylorMade aged-copper iron set sourced from the official TaylorMade irons catalog.",
+    "price": 149999,
+    "stock": 5,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-P-DHY",
+    "name": "P DHY Utility Iron",
+    "description": "TaylorMade utility driving iron sourced from the official TaylorMade irons catalog.",
+    "price": 24999,
+    "stock": 12,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-P-UDI",
+    "name": "P UDI Utility Iron",
+    "description": "TaylorMade utility driving iron sourced from the official TaylorMade irons catalog.",
+    "price": 24999,
+    "stock": 12,
+    "status": "ACTIVE",
+    "image_url": ""
+  },
+  {
+    "sku": "TM-IRON-QI-WOMENS",
+    "name": "Qi Women's Irons",
+    "description": "TaylorMade women's Qi iron set sourced from the official TaylorMade irons catalog.",
+    "price": 99999,
+    "stock": 7,
+    "status": "ACTIVE",
+    "image_url": ""
+  }
+]

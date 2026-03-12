@@ -1,6 +1,8 @@
 package db
 
 import (
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -8,12 +10,22 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	entities "golf-store/be-mono/internal/platform/entities"
 )
 
 const seedUserPassword = "123456"
+
+//go:embed taylormade_products.json
+var taylormadeProductsJSON []byte
+
+var legacyDemoProductSKUs = []string{
+	"GLF-DRIVER-001",
+	"GLF-IRON-SET-002",
+	"GLF-PUTTER-003",
+}
 
 func InitSchema(gdb *gorm.DB) error {
 	if gdb == nil {
@@ -67,44 +79,16 @@ func SeedDemoData(gdb *gorm.DB, publicBaseURL string) error {
 			return err
 		}
 
-		for _, product := range []entities.Product{
-			{
-				ID:          uuid.NewString(),
-				SKU:         "GLF-DRIVER-001",
-				Name:        "Driver Pro X",
-				Description: "460cc driver for distance and forgiveness",
-				Price:       129900,
-				Stock:       25,
-				Status:      "ACTIVE",
-				ImageURL:    seedImageURL(publicBaseURL, "driver-pro-x.svg"),
-				CreatedAt:   now,
-				UpdatedAt:   now,
-			},
-			{
-				ID:          uuid.NewString(),
-				SKU:         "GLF-IRON-SET-002",
-				Name:        "Iron Set Tour 6pcs",
-				Description: "Forged iron set for mid-to-low handicaps",
-				Price:       219900,
-				Stock:       12,
-				Status:      "ACTIVE",
-				ImageURL:    seedImageURL(publicBaseURL, "iron-tour-6pcs.svg"),
-				CreatedAt:   now,
-				UpdatedAt:   now,
-			},
-			{
-				ID:          uuid.NewString(),
-				SKU:         "GLF-PUTTER-003",
-				Name:        "Putter Classic Blade",
-				Description: "Face-balanced blade putter",
-				Price:       89900,
-				Stock:       30,
-				Status:      "ACTIVE",
-				ImageURL:    seedImageURL(publicBaseURL, "putter-classic-blade.svg"),
-				CreatedAt:   now,
-				UpdatedAt:   now,
-			},
-		} {
+		if err := retireLegacyDemoProducts(tx, now); err != nil {
+			return err
+		}
+
+		products, err := loadTaylorMadeSeedProducts(now)
+		if err != nil {
+			return err
+		}
+
+		for _, product := range products {
 			if err := ensureSeedProduct(tx, product); err != nil {
 				return err
 			}
@@ -112,6 +96,16 @@ func SeedDemoData(gdb *gorm.DB, publicBaseURL string) error {
 
 		return nil
 	})
+}
+
+type seedProductRecord struct {
+	SKU         string `json:"sku"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Price       int64  `json:"price"`
+	Stock       int    `json:"stock"`
+	Status      string `json:"status"`
+	ImageURL    string `json:"image_url"`
 }
 
 type seedUserInput struct {
@@ -179,6 +173,50 @@ func seedImageURL(publicBaseURL string, filename string) string {
 	return baseURL + "/assets/seed-images/" + strings.TrimSpace(filename)
 }
 
+func loadTaylorMadeSeedProducts(now time.Time) ([]entities.Product, error) {
+	var records []seedProductRecord
+	if err := json.Unmarshal(taylormadeProductsJSON, &records); err != nil {
+		return nil, fmt.Errorf("decode taylormade products: %w", err)
+	}
+
+	products := make([]entities.Product, 0, len(records))
+	for _, record := range records {
+		product := entities.Product{
+			ID:          uuid.NewString(),
+			SKU:         strings.TrimSpace(record.SKU),
+			Name:        strings.TrimSpace(record.Name),
+			Description: strings.TrimSpace(record.Description),
+			Price:       record.Price,
+			Stock:       record.Stock,
+			Status:      normalizeSeedProductStatus(record.Status),
+			ImageURL:    strings.TrimSpace(record.ImageURL),
+			ImageURLs:   datatypes.JSON([]byte("[]")),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+		products = append(products, product)
+	}
+
+	return products, nil
+}
+
+func normalizeSeedProductStatus(value string) string {
+	if strings.EqualFold(strings.TrimSpace(value), entities.ProductStatusInactive) {
+		return entities.ProductStatusInactive
+	}
+	return entities.ProductStatusActive
+}
+
+func retireLegacyDemoProducts(tx *gorm.DB, now time.Time) error {
+	return tx.Model(&entities.Product{}).
+		Where("sku IN ?", legacyDemoProductSKUs).
+		Updates(map[string]any{
+			"status":     entities.ProductStatusInactive,
+			"deleted_at": now,
+			"updated_at": now,
+		}).Error
+}
+
 func ensureSeedProduct(tx *gorm.DB, input entities.Product) error {
 	var product entities.Product
 	err := tx.Where("sku = ?", strings.TrimSpace(input.SKU)).Take(&product).Error
@@ -192,8 +230,12 @@ func ensureSeedProduct(tx *gorm.DB, input entities.Product) error {
 	updates := map[string]any{
 		"name":        strings.TrimSpace(input.Name),
 		"description": strings.TrimSpace(input.Description),
+		"price":       input.Price,
+		"stock":       input.Stock,
 		"status":      input.Status,
 		"image_url":   strings.TrimSpace(input.ImageURL),
+		"image_urls":  input.ImageURLs,
+		"deleted_at":  nil,
 		"updated_at":  input.UpdatedAt,
 	}
 
