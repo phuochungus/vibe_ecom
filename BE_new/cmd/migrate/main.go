@@ -6,10 +6,8 @@ import (
 	"os"
 
 	"BE_new/internal/config"
+	"BE_new/internal/database"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -24,30 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	m, err := migrate.New("file://db/migrations", dbConfig.DSN)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		sourceErr, databaseErr := m.Close()
-		if sourceErr != nil {
-			log.Printf("close migration source: %v", sourceErr)
-		}
-		if databaseErr != nil {
-			log.Printf("close migration database: %v", databaseErr)
-		}
-	}()
-
-	switch direction {
-	case "up":
-		err = m.Up()
-	case "down":
-		err = m.Down()
-	default:
-		log.Fatalf("unsupported migration direction %q", direction)
-	}
-
-	if err != nil && err != migrate.ErrNoChange {
+	if err := database.Migrate(direction, dbConfig); err != nil {
 		log.Fatal(err)
 	}
 }

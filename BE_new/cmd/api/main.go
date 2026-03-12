@@ -5,7 +5,7 @@ import (
 
 	"BE_new/internal/config"
 	"BE_new/internal/database"
-	apihttp "BE_new/internal/http"
+	"BE_new/internal/routes"
 
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -21,7 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := apihttp.NewRouter(db)
+	router := routes.NewRouter(db)
 	if err := router.Run(cfg.HTTP.Address()); err != nil {
 		log.Fatal(err)
 	}
