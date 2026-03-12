@@ -62,12 +62,12 @@ func New(cfg config.Config) (*App, error) {
 		RefreshTTL: time.Duration(cfg.JWTRefreshTTLMinutes) * time.Minute,
 	})
 
-	var productImageStorage *storage.MinIO
+	var productImageStorage productsvc.ImageStorage
 	if cfg.MinIOEnabled {
 		minioCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		productImageStorage, err = storage.NewMinIO(minioCtx, storage.MinIOConfig{
+		minioStorage, err := storage.NewMinIO(minioCtx, storage.MinIOConfig{
 			Endpoint:      cfg.MinIOEndpoint,
 			PublicBaseURL: cfg.MinIOPublicBaseURL,
 			AccessKey:     cfg.MinIOAccessKey,
@@ -79,6 +79,7 @@ func New(cfg config.Config) (*App, error) {
 			closeGorm(database)
 			return nil, fmt.Errorf("init minio: %w", err)
 		}
+		productImageStorage = minioStorage
 	}
 
 	productRepo := productrepository.NewGorm(database)

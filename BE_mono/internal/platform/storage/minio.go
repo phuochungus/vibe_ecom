@@ -66,6 +66,10 @@ func NewMinIO(ctx context.Context, cfg MinIOConfig) (*MinIO, error) {
 }
 
 func (m *MinIO) Upload(ctx context.Context, objectKey string, reader io.Reader, size int64, contentType string) (string, error) {
+	if m == nil || m.client == nil {
+		return "", fmt.Errorf("minio client is not configured")
+	}
+
 	key := strings.TrimLeft(strings.TrimSpace(objectKey), "/")
 	if key == "" {
 		return "", fmt.Errorf("object key is required")
@@ -85,6 +89,10 @@ func (m *MinIO) Upload(ctx context.Context, objectKey string, reader io.Reader, 
 }
 
 func (m *MinIO) PublicURL(objectKey string) string {
+	if m == nil {
+		return ""
+	}
+
 	key := strings.TrimLeft(strings.TrimSpace(objectKey), "/")
 	if key == "" {
 		return strings.TrimRight(m.publicBaseURL, "/") + "/" + m.bucket
@@ -93,6 +101,10 @@ func (m *MinIO) PublicURL(objectKey string) string {
 }
 
 func (m *MinIO) ensureBucket(ctx context.Context) error {
+	if m == nil || m.client == nil {
+		return fmt.Errorf("minio client is not configured")
+	}
+
 	exists, err := m.client.BucketExists(ctx, m.bucket)
 	if err != nil {
 		return fmt.Errorf("check minio bucket: %w", err)
@@ -107,6 +119,10 @@ func (m *MinIO) ensureBucket(ctx context.Context) error {
 }
 
 func (m *MinIO) ensurePublicReadPolicy(ctx context.Context) error {
+	if m == nil || m.client == nil {
+		return fmt.Errorf("minio client is not configured")
+	}
+
 	policy := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/*"]}]}`, m.bucket)
 	if err := m.client.SetBucketPolicy(ctx, m.bucket, policy); err != nil {
 		return fmt.Errorf("set minio bucket policy: %w", err)

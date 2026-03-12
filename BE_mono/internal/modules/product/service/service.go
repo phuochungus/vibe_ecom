@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -223,7 +224,7 @@ func (s *Service) AdminDelete(productID string) *apperrors.APIError {
 }
 
 func (s *Service) AdminUploadImage(ctx context.Context, fileName string, content []byte) (*AdminUploadImageOutput, *apperrors.APIError) {
-	if s.imageStorage == nil {
+	if !hasImageStorage(s.imageStorage) {
 		return nil, &apperrors.APIError{
 			Status:  http.StatusServiceUnavailable,
 			Code:    "IMAGE_STORAGE_NOT_CONFIGURED",
@@ -260,6 +261,20 @@ func (s *Service) AdminUploadImage(ctx context.Context, fileName string, content
 		ContentType: contentType,
 		Size:        int64(len(content)),
 	}, nil
+}
+
+func hasImageStorage(storage ImageStorage) bool {
+	if storage == nil {
+		return false
+	}
+
+	value := reflect.ValueOf(storage)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return !value.IsNil()
+	default:
+		return true
+	}
 }
 
 func ParseStatus(status string) (string, error) {

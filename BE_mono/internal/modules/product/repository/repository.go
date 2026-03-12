@@ -40,7 +40,6 @@ func NewGorm(db *gorm.DB) *GormRepository {
 func (r *GormRepository) List(filter ListFilter) ([]*entities.Product, int64, error) {
 	query := r.db.Model(&entities.Product{})
 
-	// log.Printf("List filter: %+v", filter)
 	if !filter.AdminView {
 		query = query.Where("deleted_at IS NULL")
 	}
