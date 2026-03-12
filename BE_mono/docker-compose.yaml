@@ -17,5 +17,20 @@ services:
     volumes:
       - mono_postgres_data:/var/lib/postgresql/data
 
+  minio:
+    image: minio/minio:latest
+    container_name: golf-store-mono-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - mono_minio_data:/data
+
 volumes:
   mono_postgres_data:
+  mono_minio_data:

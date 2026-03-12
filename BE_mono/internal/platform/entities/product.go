@@ -18,7 +18,7 @@ type Product struct {
 	Status      string         `gorm:"column:status;type:varchar(16);not null;default:ACTIVE" json:"status"`
 	ImageURL    string         `gorm:"column:image_url;type:varchar(500)" json:"image_url"`
 	ImageURLs   datatypes.JSON `gorm:"column:image_urls;type:jsonb" json:"image_urls"`
-	DeletedAt   *time.Time     `gorm:"column:deleted_at"`
+	DeletedAt   *time.Time     `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null" json:"created_at"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null" json:"updated_at"`
 	OrderItems  []OrderItem    `gorm:"foreignKey:ProductID;references:ID" json:"order_items,omitempty"`

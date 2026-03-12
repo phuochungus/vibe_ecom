@@ -1,4 +1,4 @@
-.PHONY: test run seed-demo postgres-up postgres-down
+.PHONY: test run seed-demo infra-up infra-down postgres-up minio-up
 
 test:
 	go test ./...
@@ -9,8 +9,14 @@ run:
 seed-demo:
 	go run ./cmd/seed-demo
 
-postgres-up:
-	docker compose -f docker-compose.postgres.yml up -d
+infra-up:
+	docker compose up -d
 
-postgres-down:
-	docker compose -f docker-compose.postgres.yml down -v
+infra-down:
+	docker compose down -v
+
+postgres-up:
+	docker compose up -d postgres
+
+minio-up:
+	docker compose up -d minio

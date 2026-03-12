@@ -53,6 +53,13 @@ export interface ProductCreatePayload {
 
 export type ProductUpdatePayload = Partial<ProductCreatePayload>
 
+export interface ProductImageUploadResponse {
+  url: string
+  object_key: string
+  content_type: string
+  size: number
+}
+
 // --- Order ---
 export interface OrderItem {
   id: string

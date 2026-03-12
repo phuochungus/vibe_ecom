@@ -1,5 +1,11 @@
 import { api } from '@/lib/api'
-import type { Product, ProductCreatePayload, ProductUpdatePayload, PaginatedResponse } from '@/types'
+import type {
+  PaginatedResponse,
+  Product,
+  ProductCreatePayload,
+  ProductImageUploadResponse,
+  ProductUpdatePayload,
+} from '@/types'
 
 export const productsApi = {
   list: (params?: {
@@ -22,6 +28,19 @@ export const productsApi = {
 
   update: (id: string, payload: ProductUpdatePayload) =>
     api.patch<{ data: Product }>(`/admin/products/${id}`, payload).then((r) => r.data.data),
+
+  uploadImage: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return api
+      .post<{ data: ProductImageUploadResponse }>('/admin/products/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      .then((r) => r.data.data)
+  },
 
   delete: (id: string) =>
     api.delete(`/admin/products/${id}`),

@@ -30,6 +30,7 @@ import (
 	"golf-store/be-mono/internal/platform/config"
 	"golf-store/be-mono/internal/platform/db"
 	"golf-store/be-mono/internal/platform/httpserver"
+	"golf-store/be-mono/internal/platform/storage"
 )
 
 type App struct {
@@ -60,8 +61,28 @@ func New(cfg config.Config) (*App, error) {
 		AccessTTL:  time.Duration(cfg.JWTAccessTTLMinutes) * time.Minute,
 		RefreshTTL: time.Duration(cfg.JWTRefreshTTLMinutes) * time.Minute,
 	})
+
+	var productImageStorage *storage.MinIO
+	if cfg.MinIOEnabled {
+		minioCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		productImageStorage, err = storage.NewMinIO(minioCtx, storage.MinIOConfig{
+			Endpoint:      cfg.MinIOEndpoint,
+			PublicBaseURL: cfg.MinIOPublicBaseURL,
+			AccessKey:     cfg.MinIOAccessKey,
+			SecretKey:     cfg.MinIOSecretKey,
+			Bucket:        cfg.MinIOBucket,
+			UseSSL:        cfg.MinIOUseSSL,
+		})
+		if err != nil {
+			closeGorm(database)
+			return nil, fmt.Errorf("init minio: %w", err)
+		}
+	}
+
 	productRepo := productrepository.NewGorm(database)
-	productService := productsvc.New(productRepo)
+	productService := productsvc.New(productRepo, productImageStorage)
 	orderRepo := orderrepository.NewGorm(database)
 	orderService := ordersvc.New(orderRepo)
 	paymentRepo := paymentrepository.NewGorm(database)

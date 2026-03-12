@@ -1,8 +1,13 @@
 package service
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,11 +22,19 @@ import (
 )
 
 type Service struct {
-	repo repository.Repository
+	repo         repository.Repository
+	imageStorage ImageStorage
 }
 
-func New(repo repository.Repository) *Service {
-	return &Service{repo: repo}
+type ImageStorage interface {
+	Upload(ctx context.Context, objectKey string, reader io.Reader, size int64, contentType string) (string, error)
+}
+
+func New(repo repository.Repository, imageStorage ImageStorage) *Service {
+	return &Service{
+		repo:         repo,
+		imageStorage: imageStorage,
+	}
 }
 
 type ListInput struct {
@@ -45,6 +58,17 @@ type AdminUpsertInput struct {
 	Status      string
 	ImageURL    string
 }
+
+type AdminUploadImageOutput struct {
+	URL         string `json:"url"`
+	ObjectKey   string `json:"object_key"`
+	ContentType string `json:"content_type"`
+	Size        int64  `json:"size"`
+}
+
+const MaxProductImageUploadBytes = 10 << 20
+
+var productImageNameSanitizer = regexp.MustCompile(`[^a-z0-9]+`)
 
 func (s *Service) List(input ListInput) response.PageDto[*entities.Product] {
 	if input.Page <= 0 {
@@ -198,6 +222,46 @@ func (s *Service) AdminDelete(productID string) *apperrors.APIError {
 	return nil
 }
 
+func (s *Service) AdminUploadImage(ctx context.Context, fileName string, content []byte) (*AdminUploadImageOutput, *apperrors.APIError) {
+	if s.imageStorage == nil {
+		return nil, &apperrors.APIError{
+			Status:  http.StatusServiceUnavailable,
+			Code:    "IMAGE_STORAGE_NOT_CONFIGURED",
+			Message: "Image storage is not configured",
+		}
+	}
+
+	if len(content) == 0 {
+		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "image file is required"}
+	}
+	if len(content) > MaxProductImageUploadBytes {
+		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "image must be 10MB or smaller"}
+	}
+
+	contentType := http.DetectContentType(content)
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(contentType)), "image/") {
+		return nil, &apperrors.APIError{Status: http.StatusBadRequest, Code: "VALIDATION_ERROR", Message: "uploaded file must be an image"}
+	}
+
+	objectKey := buildProductImageObjectKey(fileName, contentType)
+	url, err := s.imageStorage.Upload(ctx, objectKey, bytes.NewReader(content), int64(len(content)), contentType)
+	if err != nil {
+		return nil, &apperrors.APIError{
+			Status:  http.StatusInternalServerError,
+			Code:    "IMAGE_UPLOAD_FAILED",
+			Message: "Failed to upload image",
+			Details: err.Error(),
+		}
+	}
+
+	return &AdminUploadImageOutput{
+		URL:         url,
+		ObjectKey:   objectKey,
+		ContentType: contentType,
+		Size:        int64(len(content)),
+	}, nil
+}
+
 func ParseStatus(status string) (string, error) {
 	if status == "" {
 		return entities.ProductStatusActive, nil
@@ -238,4 +302,52 @@ func calcTotalPages(total int, pageSize int) int {
 		return 0
 	}
 	return (total + pageSize - 1) / pageSize
+}
+
+func buildProductImageObjectKey(fileName string, contentType string) string {
+	ext := imageExtension(fileName, contentType)
+	baseName := sanitizeImageBaseName(strings.TrimSuffix(filepath.Base(strings.TrimSpace(fileName)), filepath.Ext(strings.TrimSpace(fileName))))
+	if baseName == "" {
+		baseName = "product-image"
+	}
+
+	return fmt.Sprintf(
+		"products/%s/%s-%s%s",
+		time.Now().UTC().Format("2006/01"),
+		uuid.NewString(),
+		baseName,
+		ext,
+	)
+}
+
+func imageExtension(fileName string, contentType string) string {
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	case "image/avif":
+		return ".avif"
+	}
+
+	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(fileName)))
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif":
+		if ext == ".jpeg" {
+			return ".jpg"
+		}
+		return ext
+	default:
+		return ".bin"
+	}
+}
+
+func sanitizeImageBaseName(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	normalized = productImageNameSanitizer.ReplaceAllString(normalized, "-")
+	return strings.Trim(normalized, "-")
 }

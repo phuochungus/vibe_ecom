@@ -2,17 +2,24 @@
 
 Monolithic Go backend for MVP phase.
 
-## PostgreSQL (real)
+## Local Infra
 
 ```bash
 cd BE_mono
-make postgres-up
+make infra-up
 ```
 
 Set env (or copy from `.env.example`):
 
 ```bash
 export POSTGRES_DSN='host=127.0.0.1 user=golf password=golf dbname=golf_store_mono port=5433 sslmode=disable TimeZone=UTC'
+export MINIO_ENABLED='true'
+export MINIO_ENDPOINT='127.0.0.1:9000'
+export MINIO_PUBLIC_BASE_URL='http://127.0.0.1:9000'
+export MINIO_ACCESS_KEY='minioadmin'
+export MINIO_SECRET_KEY='minioadmin'
+export MINIO_BUCKET='golf-store'
+export MINIO_USE_SSL='false'
 export JWT_SECRET='replace_with_strong_secret'
 export JWT_ISSUER='be-mono'
 export JWT_ACCESS_TTL_MINUTES='15'
@@ -25,7 +32,7 @@ export OPENAPI_SPEC_PATH='/Users/imacvip/golf_store/docs/FE/openapi.yaml'
 
 ```bash
 cd BE_mono
-go run ./cmd/api
+make run
 ```
 
 Open docs:
@@ -46,7 +53,9 @@ go test ./...
 - New source code lives in `BE_mono/` only.
 - Existing microservice skeleton in `BE/` is untouched.
 - `POSTGRES_DSN` is required at runtime.
+- Local Docker services are defined in `docker-compose.yaml`.
 - Data is persisted directly in PostgreSQL tables (`users`, `products`, `orders`, `order_items`, `payment_transactions`, `notifications`, ...).
+- Admin product image uploads are available at `POST /api/v1/admin/products/upload-image` when MinIO is enabled. Send the image as multipart form-data in the `file` field.
 - Seed accounts:
   - `admin@golf.local / 123456`
   - `user@golf.local / 123456`

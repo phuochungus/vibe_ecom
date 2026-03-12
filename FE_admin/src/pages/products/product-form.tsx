@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, ImagePlus, Loader2, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getErrorMessage } from '@/lib/api'
 import { productsApi } from '@/services/products'
 import type { ProductCreatePayload, ProductStatus } from '@/types'
 
@@ -28,7 +29,6 @@ interface ProductFormValues {
   price: string
   stock: number
   status: ProductStatus
-  image_url: string
 }
 
 export default function ProductFormPage() {
@@ -36,6 +36,9 @@ export default function ProductFormPage() {
   const isEdit = !!id
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
 
   const { data: product, isLoading: loadingProduct } = useQuery({
     queryKey: ['product', id],
@@ -44,11 +47,10 @@ export default function ProductFormPage() {
   })
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<ProductFormValues>({
     defaultValues: {
@@ -66,10 +68,17 @@ export default function ProductFormPage() {
         price: product.price,
         stock: product.stock,
         status: product.status as ProductStatus,
-        image_url: product.image_url ?? '',
       })
     }
   }, [product, reset])
+
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) {
+        URL.revokeObjectURL(localPreviewUrl)
+      }
+    }
+  }, [localPreviewUrl])
 
   const createMutation = useMutation({
     mutationFn: (payload: ProductCreatePayload) => productsApi.create(payload),
@@ -78,7 +87,7 @@ export default function ProductFormPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       navigate('/products')
     },
-    onError: () => toast.error('Tạo sản phẩm thất bại'),
+    onError: (error) => toast.error(getErrorMessage(error) || 'Tạo sản phẩm thất bại'),
   })
 
   const updateMutation = useMutation({
@@ -89,27 +98,71 @@ export default function ProductFormPage() {
       queryClient.invalidateQueries({ queryKey: ['product', id] })
       navigate('/products')
     },
-    onError: () => toast.error('Cập nhật sản phẩm thất bại'),
+    onError: (error) => toast.error(getErrorMessage(error) || 'Cập nhật sản phẩm thất bại'),
   })
 
-  const onSubmit = (data: ProductFormValues) => {
-    const payload: ProductCreatePayload = {
-      sku: data.sku,
-      name: data.name,
-      description: data.description || undefined,
-      price: parseInt(data.price).toString(),
-      stock: data.stock,
-      status: data.status,
-      image_url: data.image_url || undefined,
+  const uploadImageMutation = useMutation({
+    mutationFn: (file: File) => productsApi.uploadImage(file),
+    onError: (error) => toast.error(getErrorMessage(error) || 'Tải ảnh lên thất bại'),
+  })
+
+  const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
     }
-    if (isEdit) {
-      updateMutation.mutate(payload)
-    } else {
-      createMutation.mutate(payload)
+
+    if (localPreviewUrl) {
+      URL.revokeObjectURL(localPreviewUrl)
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    setSelectedImageFile(file)
+    setLocalPreviewUrl(previewUrl)
+  }
+
+  const clearSelectedImage = () => {
+    if (localPreviewUrl) {
+      URL.revokeObjectURL(localPreviewUrl)
+    }
+    setSelectedImageFile(null)
+    setLocalPreviewUrl(null)
+  }
+
+  const onSubmit = async (data: ProductFormValues) => {
+    try {
+      let imageURL = uploadedImageUrl || product?.image_url || undefined
+
+      if (selectedImageFile) {
+        const upload = await uploadImageMutation.mutateAsync(selectedImageFile)
+        imageURL = upload.url
+        setUploadedImageUrl(upload.url)
+      }
+
+      const payload: ProductCreatePayload = {
+        sku: data.sku,
+        name: data.name,
+        description: data.description || undefined,
+        price: Number.parseInt(data.price, 10).toString(),
+        stock: data.stock,
+        status: data.status,
+        image_url: imageURL,
+      }
+
+      if (isEdit) {
+        await updateMutation.mutateAsync(payload)
+        return
+      }
+
+      await createMutation.mutateAsync(payload)
+    } catch {
+      return
     }
   }
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending
+  const isSubmitting =
+    createMutation.isPending || updateMutation.isPending || uploadImageMutation.isPending
+  const imagePreview = localPreviewUrl || uploadedImageUrl || product?.image_url || ''
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -153,19 +206,25 @@ export default function ProductFormPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Trạng thái</Label>
-                  <Select
-                    value={watch('status')}
-                    onValueChange={(v: string) => setValue('status', v as ProductStatus)}
-                  >
-                    <SelectTrigger id="status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Đang bán</SelectItem>
-                      <SelectItem value="INACTIVE">Tạm dừng</SelectItem>
-                      <SelectItem value="DISCONTINUED">Ngừng bán</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={(value: string) => field.onChange(value as ProductStatus)}
+                      >
+                        <SelectTrigger id="status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">Đang bán</SelectItem>
+                          <SelectItem value="INACTIVE">Tạm dừng</SelectItem>
+                          <SelectItem value="DISCONTINUED">Ngừng bán</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
               </div>
 
@@ -206,7 +265,7 @@ export default function ProductFormPage() {
                   <Input
                     id="price"
                     type="number"
-                      placeholder="1590000"
+                    placeholder="1590000"
                     {...register('price', {
                       required: 'Giá bán là bắt buộc',
                       min: { value: 1, message: 'Giá phải lớn hơn 0 (BR-PROD-01)' },
@@ -245,20 +304,58 @@ export default function ProductFormPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="image_url">URL hình ảnh</Label>
+                <Label htmlFor="image_file">Tải ảnh sản phẩm</Label>
                 <Input
-                  id="image_url"
-                  placeholder="https://..."
-                  {...register('image_url')}
+                  id="image_file"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  disabled={isSubmitting}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Hỗ trợ JPG, PNG, WebP, GIF, AVIF. Kích thước tối đa 10MB.
+                </p>
               </div>
-              {watch('image_url') && (
-                <img
-                  src={watch('image_url')}
-                  alt="Preview"
-                  className="h-32 w-32 rounded-md object-cover border"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
+
+              {selectedImageFile ? (
+                <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Upload className="h-4 w-4" />
+                    <span className="truncate">{selectedImageFile.name}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSelectedImage}
+                    disabled={isSubmitting}
+                  >
+                    <X className="mr-1 h-4 w-4" />
+                    Bỏ chọn
+                  </Button>
+                </div>
+              ) : null}
+
+              {imagePreview ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">
+                    {selectedImageFile ? 'Ảnh xem trước' : 'Ảnh hiện tại'}
+                  </p>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="h-40 w-40 rounded-md border object-cover"
+                    onError={(e) => {
+                      const image = e.target as HTMLImageElement
+                      image.style.display = 'none'
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex h-40 w-40 flex-col items-center justify-center rounded-md border border-dashed text-center text-sm text-muted-foreground">
+                  <ImagePlus className="mb-2 h-5 w-5" />
+                  Chưa có ảnh sản phẩm
+                </div>
               )}
             </CardContent>
           </Card>
@@ -273,7 +370,7 @@ export default function ProductFormPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang lưu...
+                  {uploadImageMutation.isPending ? 'Đang tải ảnh...' : 'Đang lưu...'}
                 </>
               ) : isEdit ? (
                 'Cập nhật'

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
 func (h *Handler) RegisterAdmin(rg *gin.RouterGroup) {
 	rg.GET("/products", h.AdminListProducts)
 	rg.GET("/products/:product_id", h.AdminGetProduct)
+	rg.POST("/products/upload-image", h.AdminUploadProductImage)
 	rg.POST("/products", h.AdminCreateProduct)
 	rg.PATCH("/products/:product_id", h.AdminUpdateProduct)
 	rg.DELETE("/products/:product_id", h.AdminDeleteProduct)
@@ -192,6 +194,41 @@ func (h *Handler) AdminDeleteProduct(c *gin.Context) {
 		return
 	}
 	response.NoContent(c)
+}
+
+func (h *Handler) AdminUploadProductImage(c *gin.Context) {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "image file is required", nil)
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "failed to read uploaded file", nil)
+		return
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	content, err := io.ReadAll(io.LimitReader(file, prodsvc.MaxProductImageUploadBytes+1))
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "failed to read uploaded file", nil)
+		return
+	}
+	if len(content) > prodsvc.MaxProductImageUploadBytes {
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "image must be 10MB or smaller", nil)
+		return
+	}
+
+	result, apiErr := h.products.AdminUploadImage(c.Request.Context(), fileHeader.Filename, content)
+	if apiErr != nil {
+		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
+		return
+	}
+
+	response.OK(c, result)
 }
 
 func parseIntDefault(value string, fallback int) int {

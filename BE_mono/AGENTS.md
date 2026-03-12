@@ -1,17 +1,17 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`cmd/api` contains the API entrypoint. Application wiring lives in `internal/app`, while reusable infrastructure sits in `internal/platform` (`config`, `db`, `entities`, `observability`). Business code is organized by domain under `internal/modules/<domain>/{http,service,repository,dto}`. Cross-cutting helpers live in `internal/shared` (`middleware`, `response`, `errors`, `utils`). Database schema changes go in `migrations/`; local PostgreSQL orchestration is defined in `docker-compose.postgres.yml`.
+`cmd/api` contains the API entrypoint. Application wiring lives in `internal/app`, while reusable infrastructure sits in `internal/platform` (`config`, `db`, `entities`, `observability`, `storage`). Business code is organized by domain under `internal/modules/<domain>/{http,service,repository,dto}`. Cross-cutting helpers live in `internal/shared` (`middleware`, `response`, `errors`, `utils`). Database schema changes go in `migrations/`; local backend infrastructure is defined in `docker-compose.yaml`.
 
 ## Build, Test, and Development Commands
 Use the Makefile first:
 
-- `make postgres-up`: start the local PostgreSQL container on the configured port.
+- `make infra-up`: start the local PostgreSQL and MinIO containers on the configured ports.
 - `make run`: run the API with `go run ./cmd/api`.
 - `make test`: run the full Go test suite with `go test ./...`.
-- `make postgres-down`: stop PostgreSQL and remove the local volume.
+- `make infra-down`: stop local backend infrastructure and remove the local volumes.
 
-Before `make run`, set `POSTGRES_DSN` and auth settings from `.env.example`. `POSTGRES_DSN` is required at runtime.
+Before `make run`, set `POSTGRES_DSN`, auth settings, and MinIO settings from `.env.example` when object storage is enabled. `POSTGRES_DSN` is required at runtime.
 
 ## Coding Style & Naming Conventions
 Keep code `gofmt`-clean; no separate linter config is checked in. Follow standard Go formatting, grouped imports, and lowercase package names. Use `snake_case.go` filenames such as `order_status_history.go`. Keep HTTP handlers thin, place business rules in `service`, and isolate GORM/data access in `repository`. Exported identifiers use `PascalCase`; local variables use `camelCase`.
