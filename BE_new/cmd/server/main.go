@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-
 	err := db.InitializeDatabase()
 	if err != nil {
 		panic(fmt.Errorf("failed to initialize database: %w", err))
