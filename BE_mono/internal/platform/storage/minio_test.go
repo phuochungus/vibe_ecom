@@ -1,6 +1,10 @@
 package storage
 
-import "testing"
+import (
+	"context"
+	"strings"
+	"testing"
+)
 
 func TestResolvePublicBaseURL(t *testing.T) {
 	t.Run("uses explicit public base url", func(t *testing.T) {
@@ -30,5 +34,17 @@ func TestEncodeObjectKey(t *testing.T) {
 	want := "products/2026/03/my%20image%20%231.png"
 	if got != want {
 		t.Fatalf("expected encoded object key %q, got %q", want, got)
+	}
+}
+
+func TestUploadReturnsErrorForNilReceiver(t *testing.T) {
+	var store *MinIO
+
+	url, err := store.Upload(context.Background(), "products/test.png", strings.NewReader("x"), 1, "image/png")
+	if err == nil {
+		t.Fatal("expected upload error for nil receiver")
+	}
+	if url != "" {
+		t.Fatalf("expected empty url, got %q", url)
 	}
 }
