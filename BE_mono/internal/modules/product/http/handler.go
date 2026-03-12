@@ -14,11 +14,11 @@ import (
 )
 
 type Handler struct {
-	products *prodsvc.Service
+	productsvc *prodsvc.Service
 }
 
 func New(products *prodsvc.Service) *Handler {
-	return &Handler{products: products}
+	return &Handler{productsvc: products}
 }
 
 func (h *Handler) RegisterPublic(rg *gin.RouterGroup) {
@@ -43,7 +43,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
 
-	out := h.products.List(prodsvc.ListInput{
+	out := h.productsvc.List(prodsvc.ListInput{
 		Query:     c.Query("q"),
 		Status:    c.Query("status"),
 		Min:       min,
@@ -60,7 +60,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 
 func (h *Handler) GetProduct(c *gin.Context) {
 	productID := c.Param("product_id")
-	p, apiErr := h.products.GetByID(productID, false)
+	p, apiErr := h.productsvc.GetByID(productID, false)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
@@ -75,7 +75,7 @@ func (h *Handler) AdminListProducts(c *gin.Context) {
 	page := parseIntDefault(c.Query("page"), 1)
 	pageSize := parseIntDefault(c.Query("page_size"), 20)
 
-	out := h.products.List(prodsvc.ListInput{
+	out := h.productsvc.List(prodsvc.ListInput{
 		Query:     c.Query("q"),
 		Status:    c.Query("status"),
 		Min:       min,
@@ -92,7 +92,7 @@ func (h *Handler) AdminListProducts(c *gin.Context) {
 
 func (h *Handler) AdminGetProduct(c *gin.Context) {
 	productID := c.Param("product_id")
-	p, apiErr := h.products.GetByID(productID, true)
+	p, apiErr := h.productsvc.GetByID(productID, true)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
@@ -122,7 +122,7 @@ func (h *Handler) AdminCreateProduct(c *gin.Context) {
 		return
 	}
 
-	product, apiErr := h.products.AdminCreate(prodsvc.AdminUpsertInput{
+	product, apiErr := h.productsvc.AdminCreate(prodsvc.AdminUpsertInput{
 		SKU:         req.SKU,
 		Name:        req.Name,
 		Description: req.Description,
@@ -170,7 +170,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 		stock = *req.Stock
 	}
 
-	product, apiErr := h.products.AdminUpdate(productID, prodsvc.AdminUpsertInput{
+	product, apiErr := h.productsvc.AdminUpdate(productID, prodsvc.AdminUpsertInput{
 		SKU:         req.SKU,
 		Name:        req.Name,
 		Description: req.Description,
@@ -188,7 +188,7 @@ func (h *Handler) AdminUpdateProduct(c *gin.Context) {
 }
 
 func (h *Handler) AdminDeleteProduct(c *gin.Context) {
-	apiErr := h.products.AdminDelete(c.Param("product_id"))
+	apiErr := h.productsvc.AdminDelete(c.Param("product_id"))
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return
@@ -222,7 +222,7 @@ func (h *Handler) AdminUploadProductImage(c *gin.Context) {
 		return
 	}
 
-	result, apiErr := h.products.AdminUploadImage(c.Request.Context(), fileHeader.Filename, content)
+	result, apiErr := h.productsvc.AdminUploadImage(c.Request.Context(), fileHeader.Filename, content)
 	if apiErr != nil {
 		response.Error(c, apiErr.Status, apiErr.Code, apiErr.Message, apiErr.Details)
 		return

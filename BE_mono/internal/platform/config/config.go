@@ -7,44 +7,54 @@ import (
 )
 
 type Config struct {
-	ServiceName          string
-	HTTPPort             string
-	Env                  string
-	PostgresDSN          string
-	MinIOEnabled         bool
-	MinIOEndpoint        string
-	MinIOPublicBaseURL   string
-	MinIOAccessKey       string
-	MinIOSecretKey       string
-	MinIOBucket          string
-	MinIOUseSSL          bool
-	PublicBaseURL        string
-	CORSAllowedOrigins   []string
-	JWTIssuer            string
-	JWTSecret            string
-	JWTAccessTTLMinutes  int
-	JWTRefreshTTLMinutes int
+	ServiceName                  string
+	HTTPPort                     string
+	Env                          string
+	PostgresDSN                  string
+	SupabaseStorageEnabled       bool
+	SupabaseURL                  string
+	SupabaseServiceRoleKey       string
+	SupabaseStorageBucket        string
+	SupabaseStoragePublicBaseURL string
+	MinIOEnabled                 bool
+	MinIOEndpoint                string
+	MinIOPublicBaseURL           string
+	MinIOAccessKey               string
+	MinIOSecretKey               string
+	MinIOBucket                  string
+	MinIOUseSSL                  bool
+	PublicBaseURL                string
+	CORSAllowedOrigins           []string
+	JWTIssuer                    string
+	JWTSecret                    string
+	JWTAccessTTLMinutes          int
+	JWTRefreshTTLMinutes         int
 }
 
 func Load(defaultServiceName string, defaultPort string) Config {
 	return Config{
-		ServiceName:          getEnv("SERVICE_NAME", defaultServiceName),
-		HTTPPort:             getEnvAny([]string{"HTTP_PORT", "PORT"}, defaultPort),
-		Env:                  getEnv("APP_ENV", "local"),
-		PostgresDSN:          getEnv("POSTGRES_DSN", ""),
-		MinIOEnabled:         getEnvBool("MINIO_ENABLED", false),
-		MinIOEndpoint:        getEnv("MINIO_ENDPOINT", "127.0.0.1:9000"),
-		MinIOPublicBaseURL:   normalizePublicBaseURL(getEnv("MINIO_PUBLIC_BASE_URL", "http://127.0.0.1:9000")),
-		MinIOAccessKey:       getEnv("MINIO_ACCESS_KEY", ""),
-		MinIOSecretKey:       getEnv("MINIO_SECRET_KEY", ""),
-		MinIOBucket:          getEnv("MINIO_BUCKET", "golf-store"),
-		MinIOUseSSL:          getEnvBool("MINIO_USE_SSL", false),
-		PublicBaseURL:        normalizePublicBaseURL(getEnv("PUBLIC_BASE_URL", "http://127.0.0.1:"+defaultPort)),
-		CORSAllowedOrigins:   getEnvCSV("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:4173", "http://127.0.0.1:4173"}),
-		JWTIssuer:            getEnv("JWT_ISSUER", defaultServiceName),
-		JWTSecret:            getEnv("JWT_SECRET", "dev_jwt_secret_change_me"),
-		JWTAccessTTLMinutes:  getEnvInt("JWT_ACCESS_TTL_MINUTES", 15),
-		JWTRefreshTTLMinutes: getEnvInt("JWT_REFRESH_TTL_MINUTES", 10080),
+		ServiceName:                  getEnv("SERVICE_NAME", defaultServiceName),
+		HTTPPort:                     getEnvAny([]string{"HTTP_PORT", "PORT"}, defaultPort),
+		Env:                          getEnv("APP_ENV", "local"),
+		PostgresDSN:                  getEnv("POSTGRES_DSN", ""),
+		SupabaseStorageEnabled:       getEnvBool("SUPABASE_STORAGE_ENABLED", false),
+		SupabaseURL:                  normalizePublicBaseURL(getEnv("SUPABASE_URL", "")),
+		SupabaseServiceRoleKey:       getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
+		SupabaseStorageBucket:        getEnv("SUPABASE_STORAGE_BUCKET", "golf-store"),
+		SupabaseStoragePublicBaseURL: normalizePublicBaseURL(getEnv("SUPABASE_STORAGE_PUBLIC_BASE_URL", "")),
+		MinIOEnabled:                 getEnvBool("MINIO_ENABLED", false),
+		MinIOEndpoint:                getEnv("MINIO_ENDPOINT", "127.0.0.1:9000"),
+		MinIOPublicBaseURL:           normalizePublicBaseURL(getEnv("MINIO_PUBLIC_BASE_URL", "http://127.0.0.1:9000")),
+		MinIOAccessKey:               getEnv("MINIO_ACCESS_KEY", ""),
+		MinIOSecretKey:               getEnv("MINIO_SECRET_KEY", ""),
+		MinIOBucket:                  getEnv("MINIO_BUCKET", "golf-store"),
+		MinIOUseSSL:                  getEnvBool("MINIO_USE_SSL", false),
+		PublicBaseURL:                normalizePublicBaseURL(getEnv("PUBLIC_BASE_URL", "http://127.0.0.1:"+defaultPort)),
+		CORSAllowedOrigins:           getEnvCSV("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:4173", "http://127.0.0.1:4173"}),
+		JWTIssuer:                    getEnv("JWT_ISSUER", defaultServiceName),
+		JWTSecret:                    getEnv("JWT_SECRET", "dev_jwt_secret_change_me"),
+		JWTAccessTTLMinutes:          getEnvInt("JWT_ACCESS_TTL_MINUTES", 15),
+		JWTRefreshTTLMinutes:         getEnvInt("JWT_REFRESH_TTL_MINUTES", 10080),
 	}
 }
 

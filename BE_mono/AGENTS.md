@@ -11,7 +11,7 @@ Use the Makefile first:
 - `make test`: run the full Go test suite with `go test ./...`.
 - `make infra-down`: stop local backend infrastructure and remove the local volumes.
 
-Before `make run`, set `POSTGRES_DSN`, auth settings, and MinIO settings from `.env.example` when object storage is enabled. `POSTGRES_DSN` is required at runtime.
+Before `make run`, set `POSTGRES_DSN`, auth settings, and the object storage settings from `.env.example` when image uploads are enabled. Supabase Storage takes precedence over MinIO when both are configured. `POSTGRES_DSN` is required at runtime.
 
 ## Coding Style & Naming Conventions
 Keep code `gofmt`-clean; no separate linter config is checked in. Follow standard Go formatting, grouped imports, and lowercase package names. Use `snake_case.go` filenames such as `order_status_history.go`. Keep HTTP handlers thin, place business rules in `service`, and isolate GORM/data access in `repository`. Exported identifiers use `PascalCase`; local variables use `camelCase`.

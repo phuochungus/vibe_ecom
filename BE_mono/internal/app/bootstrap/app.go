@@ -62,24 +62,10 @@ func New(cfg config.Config) (*App, error) {
 		RefreshTTL: time.Duration(cfg.JWTRefreshTTLMinutes) * time.Minute,
 	})
 
-	var productImageStorage productsvc.ImageStorage
-	if cfg.MinIOEnabled {
-		minioCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		minioStorage, err := storage.NewMinIO(minioCtx, storage.MinIOConfig{
-			Endpoint:      cfg.MinIOEndpoint,
-			PublicBaseURL: cfg.MinIOPublicBaseURL,
-			AccessKey:     cfg.MinIOAccessKey,
-			SecretKey:     cfg.MinIOSecretKey,
-			Bucket:        cfg.MinIOBucket,
-			UseSSL:        cfg.MinIOUseSSL,
-		})
-		if err != nil {
-			closeGorm(database)
-			return nil, fmt.Errorf("init minio: %w", err)
-		}
-		productImageStorage = minioStorage
+	productImageStorage, err := initProductImageStorage(cfg)
+	if err != nil {
+		closeGorm(database)
+		return nil, err
 	}
 
 	productRepo := productrepository.NewGorm(database)
@@ -134,4 +120,43 @@ func closeGorm(gdb *gorm.DB) {
 		return
 	}
 	_ = sqlDB.Close()
+}
+
+func initProductImageStorage(cfg config.Config) (productsvc.ImageStorage, error) {
+	var productImageStorage productsvc.ImageStorage
+
+	switch {
+	case cfg.SupabaseStorageEnabled:
+		storageCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		supabaseStorage, err := storage.NewSupabaseStorage(storageCtx, storage.SupabaseConfig{
+			ProjectURL:     cfg.SupabaseURL,
+			ServiceRoleKey: cfg.SupabaseServiceRoleKey,
+			Bucket:         cfg.SupabaseStorageBucket,
+			PublicBaseURL:  cfg.SupabaseStoragePublicBaseURL,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("init supabase storage: %w", err)
+		}
+		productImageStorage = supabaseStorage
+	case cfg.MinIOEnabled:
+		storageCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		minioStorage, err := storage.NewMinIO(storageCtx, storage.MinIOConfig{
+			Endpoint:      cfg.MinIOEndpoint,
+			PublicBaseURL: cfg.MinIOPublicBaseURL,
+			AccessKey:     cfg.MinIOAccessKey,
+			SecretKey:     cfg.MinIOSecretKey,
+			Bucket:        cfg.MinIOBucket,
+			UseSSL:        cfg.MinIOUseSSL,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("init minio: %w", err)
+		}
+		productImageStorage = minioStorage
+	}
+
+	return productImageStorage, nil
 }

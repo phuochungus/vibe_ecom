@@ -13,6 +13,11 @@ Set env (or copy from `.env.example`):
 
 ```bash
 export POSTGRES_DSN='host=127.0.0.1 user=golf password=golf dbname=golf_store_mono port=5433 sslmode=disable TimeZone=UTC'
+export SUPABASE_STORAGE_ENABLED='false'
+export SUPABASE_URL='https://your-project.supabase.co'
+export SUPABASE_SERVICE_ROLE_KEY='your-service-role-key'
+export SUPABASE_STORAGE_BUCKET='golf-store'
+export SUPABASE_STORAGE_PUBLIC_BASE_URL=''
 export MINIO_ENABLED='true'
 export MINIO_ENDPOINT='127.0.0.1:9000'
 export MINIO_PUBLIC_BASE_URL='http://127.0.0.1:9000'
@@ -55,7 +60,7 @@ go test ./...
 - `POSTGRES_DSN` is required at runtime.
 - Local Docker services are defined in `docker-compose.yaml`.
 - Data is persisted directly in PostgreSQL tables (`users`, `products`, `orders`, `order_items`, `payment_transactions`, `notifications`, ...).
-- Admin product image uploads are available at `POST /api/v1/admin/products/upload-image` when MinIO is enabled. Send the image as multipart form-data in the `file` field.
+- Admin product image uploads are available at `POST /api/v1/admin/products/upload-image` when Supabase Storage or MinIO is enabled. If both are enabled, Supabase Storage takes precedence. Send the image as multipart form-data in the `file` field.
 - Seed accounts:
   - `admin@golf.local / 123456`
   - `user@golf.local / 123456`
