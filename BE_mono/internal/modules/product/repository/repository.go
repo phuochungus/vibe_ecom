@@ -41,6 +41,10 @@ func (r *GormRepository) List(filter ListFilter) ([]*entities.Product, int64, er
 	query := r.db.Model(&entities.Product{}).Where("deleted_at IS NULL")
 
 	if !filter.AdminView {
+		query = query.Where("deleted_at != ?", nil)
+	}
+
+	if !filter.AdminView {
 		query = query.Where("status = ?", entities.ProductStatusActive)
 	}
 	if strings.TrimSpace(filter.Status) != "" {

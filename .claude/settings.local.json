@@ -9,7 +9,10 @@
       "mcp__atlassian__getAccessibleAtlassianResources",
       "mcp__atlassian__searchJiraIssuesUsingJql",
       "mcp__atlassian__addCommentToJiraIssue",
-      "mcp__atlassian__getJiraIssue"
+      "mcp__atlassian__getJiraIssue",
+      "Bash(cd \"/Users/imacvip/vibe_ecom/BE_mono\" && make postgres-up)",
+      "WebFetch(domain:www.taylormadegolf.com)",
+      "WebSearch"
     ]
   }
 }
