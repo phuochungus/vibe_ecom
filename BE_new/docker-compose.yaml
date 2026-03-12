@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: golf_store_mono
+      POSTGRES_USER: golf
+      POSTGRES_PASSWORD: golf
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U golf -d golf_store_mono"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mono_postgres_data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - mono_minio_data:/data
+
+volumes:
+  mono_postgres_data:
+  mono_minio_data:
