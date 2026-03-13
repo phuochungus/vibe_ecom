@@ -14,16 +14,16 @@ import (
 func main() {
 	direction, err := migrationDirection(os.Args[1:])
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error determining migration direction: ", err)
 	}
 
 	dbConfig, err := config.LoadDatabase()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error loading database config: ", err)
 	}
 
 	if err := database.Migrate(direction, dbConfig); err != nil {
-		log.Fatal(err)
+		log.Fatal("Error running migration: ", err)
 	}
 }
 

@@ -13,7 +13,7 @@ import (
 const migrationsSource = "file://migrations"
 
 func Migrate(direction string, cfg config.DatabaseConfig) error {
-	m, err := migrate.New(migrationsSource, cfg.DSN)
+	m, err := migrate.New(migrationsSource, cfg.MigrationURL())
 	if err != nil {
 		return fmt.Errorf("create migrator: %w", err)
 	}
